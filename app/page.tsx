@@ -11,7 +11,7 @@ export default function Home() {
       {/* Hero Section */}
       <section className="mb-20 animate-fade-in">
         <h1 className="text-6xl md:text-7xl font-bold mb-6 tracking-tight text-foreground">
-          Hi, I'm Vishnu
+          Hi, I&apos;m Vishnu
         </h1>
         
         <div className="prose prose-lg dark:prose-invert max-w-none mb-10">
@@ -20,8 +20,8 @@ export default function Home() {
           </p>
           
           <p className="text-lg text-foreground/70 mb-4 leading-relaxed">
-            I write about things I'm learning, building, and thinking about. Sometimes it's code,
-            sometimes it's ideas, sometimes it's just whatever's on my mind.
+            I write about things I&apos;m learning, building, and thinking about. Sometimes it&apos;s code,
+            sometimes it&apos;s ideas, sometimes it&apos;s just whatever&apos;s on my mind.
           </p>
           
           <p className="text-lg text-foreground/70 mb-8 leading-relaxed">

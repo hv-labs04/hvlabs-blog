@@ -5,17 +5,17 @@ export default function AboutPage() {
       
       <div className="prose prose-lg dark:prose-invert max-w-none animate-fade-in">
         <p className="text-lg leading-relaxed">
-          I'm a software engineer who loves building things and sharing what I learn along the way.
+          I&apos;m a software engineer who loves building things and sharing what I learn along the way.
         </p>
         
         <p className="text-lg leading-relaxed">
-          When I'm not coding, you'll find me exploring new technologies, reading, or working on
+          When I&apos;m not coding, you&apos;ll find me exploring new technologies, reading, or working on
           side projects. I believe in continuous learning and sharing knowledge with the community.
         </p>
         
         <p className="text-lg leading-relaxed">
           This blog is where I document my thoughts, experiences, and discoveries. Feel free to
-          reach out if you'd like to connect!
+          reach out if you&apos;d like to connect!
         </p>
       </div>
     </div>
