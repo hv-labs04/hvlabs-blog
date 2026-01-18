@@ -56,7 +56,7 @@ export default function PostPage({ params }: PostPageProps) {
     notFound()
   }
 
-  const module = post.module ? getModuleBySlug(post.module) : null
+  const moduleData = post.module ? getModuleBySlug(post.module) : null
   const progress = getModuleProgress(post)
   const nextPost = getNextPostInModule(post)
   const previousPost = getPreviousPostInModule(post)
@@ -72,15 +72,15 @@ export default function PostPage({ params }: PostPageProps) {
       </Link>
 
       {/* Module Context */}
-      {module && (
+      {moduleData && (
         <div className="mb-6 p-4 rounded-lg bg-code-bg border border-border">
           <div className="flex items-center justify-between">
             <div>
               <Link
-                href={`/modules/${module.slug}`}
+                href={`/modules/${moduleData.slug}`}
                 className="text-sm font-medium text-foreground/70 hover:text-accent transition-colors"
               >
-                {module.title}
+                {moduleData.title}
               </Link>
               {progress && (
                 <p className="text-xs text-foreground/60 mt-1">
@@ -89,7 +89,7 @@ export default function PostPage({ params }: PostPageProps) {
               )}
             </div>
             <Link
-              href={`/modules/${module.slug}`}
+              href={`/modules/${moduleData.slug}`}
               className="text-xs text-foreground/60 hover:text-accent transition-colors"
             >
               View all →

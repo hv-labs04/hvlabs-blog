@@ -17,14 +17,14 @@ export default function BlogPage() {
       {posts.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
           {posts.map((post, index) => {
-            const module = post.module ? getModuleBySlug(post.module) : null
+            const moduleData = post.module ? getModuleBySlug(post.module) : null
             return (
               <div
                 key={post.slug}
                 className="animate-fade-in h-full"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
-                <PostCard post={post} module={module} />
+                <PostCard post={post} module={moduleData} />
               </div>
             )
           })}

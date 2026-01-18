@@ -13,30 +13,30 @@ interface ModulePageProps {
 
 export async function generateStaticParams() {
   const modules = getAllModules()
-  return modules.map((module) => ({
-    slug: module.slug,
+  return modules.map((moduleItem) => ({
+    slug: moduleItem.slug,
   }))
 }
 
 export async function generateMetadata({ params }: ModulePageProps): Promise<Metadata> {
-  const module = getModuleBySlug(params.slug)
+  const moduleData = getModuleBySlug(params.slug)
   
-  if (!module) {
+  if (!moduleData) {
     return {
       title: 'Module Not Found',
     }
   }
 
   return {
-    title: module.title,
-    description: module.description || module.title,
+    title: moduleData.title,
+    description: moduleData.description || moduleData.title,
   }
 }
 
 export default function ModulePage({ params }: ModulePageProps) {
-  const module = getModuleBySlug(params.slug)
+  const moduleData = getModuleBySlug(params.slug)
   
-  if (!module) {
+  if (!moduleData) {
     notFound()
   }
 
@@ -54,10 +54,10 @@ export default function ModulePage({ params }: ModulePageProps) {
       </Link>
 
       <header className="mb-12 animate-fade-in">
-        <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">{module.title}</h1>
-        {module.description && (
+        <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">{moduleData.title}</h1>
+        {moduleData.description && (
           <p className="text-lg text-foreground/70 leading-relaxed">
-            {module.description}
+            {moduleData.description}
           </p>
         )}
         <div className="flex items-center gap-4 mt-6 text-sm text-foreground/60">

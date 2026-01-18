@@ -68,8 +68,8 @@ export function getModuleBySlug(slug: string): Module | null {
 }
 
 export function getPostsByModule(moduleSlug: string): Post[] {
-  const module = getModuleBySlug(moduleSlug)
-  if (!module) return []
+  const moduleData = getModuleBySlug(moduleSlug)
+  if (!moduleData) return []
 
   const moduleDir = path.join(modulesDirectory, moduleSlug)
   const files = fs.readdirSync(moduleDir)
@@ -101,10 +101,10 @@ export function getPostsByModule(moduleSlug: string): Post[] {
   }).filter((post) => !post.draft)
 
   // Sort by postOrder if defined, otherwise by date
-  if (module.postOrder && module.postOrder.length > 0) {
+  if (moduleData.postOrder && moduleData.postOrder.length > 0) {
     posts.sort((a, b) => {
-      const indexA = module.postOrder!.indexOf(a.slug)
-      const indexB = module.postOrder!.indexOf(b.slug)
+      const indexA = moduleData.postOrder!.indexOf(a.slug)
+      const indexB = moduleData.postOrder!.indexOf(b.slug)
       
       // If both in order array, sort by their position
       if (indexA !== -1 && indexB !== -1) {
@@ -127,8 +127,8 @@ export function getAllPostsFromModules(): Post[] {
   const modules = getAllModules()
   const allPosts: Post[] = []
 
-  modules.forEach((module) => {
-    const posts = getPostsByModule(module.slug)
+  modules.forEach((moduleItem) => {
+    const posts = getPostsByModule(moduleItem.slug)
     allPosts.push(...posts)
   })
 
@@ -138,8 +138,8 @@ export function getAllPostsFromModules(): Post[] {
 export function getPostBySlug(slug: string): Post | null {
   const modules = getAllModules()
   
-  for (const module of modules) {
-    const moduleDir = path.join(modulesDirectory, module.slug)
+  for (const moduleItem of modules) {
+    const moduleDir = path.join(modulesDirectory, moduleItem.slug)
     const possiblePaths = [
       path.join(moduleDir, `${slug}.md`),
       path.join(moduleDir, `${slug}.mdx`),
@@ -161,7 +161,7 @@ export function getPostBySlug(slug: string): Post | null {
           featured: data.featured || false,
           draft: data.draft || false,
           readingTime: Math.ceil(readingTimeResult.minutes),
-          module: module.slug,
+          module: moduleItem.slug,
           content,
         }
       }
