@@ -21,19 +21,19 @@ export default function Header() {
           <div className="flex items-center gap-6">
             <Link 
               href="/blog" 
-              className="text-sm font-medium text-foreground/70 hover:text-accent transition-colors hidden sm:block"
+              className="text-sm font-medium text-foreground/70 hover:text-accent transition-colors"
             >
               Blog
             </Link>
             <Link 
               href="/modules" 
-              className="text-sm font-medium text-foreground/70 hover:text-accent transition-colors hidden sm:block"
+              className="text-sm font-medium text-foreground/70 hover:text-accent transition-colors"
             >
               Modules
             </Link>
             <Link 
               href="/about" 
-              className="text-sm font-medium text-foreground/70 hover:text-accent transition-colors hidden sm:block"
+              className="text-sm font-medium text-foreground/70 hover:text-accent transition-colors"
             >
               About
             </Link>

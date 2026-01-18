@@ -1,10 +1,12 @@
 import Link from 'next/link'
 import { getAllPosts } from '@/lib/posts'
-import { ArrowRight, Clock } from 'lucide-react'
+import { getAllModules, getPostsByModule } from '@/lib/modules'
+import { ArrowRight, Clock, BookOpen } from 'lucide-react'
 
 export default function Home() {
   const allPosts = getAllPosts()
   const recentPosts = allPosts.slice(0, 3)
+  const modules = getAllModules()
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 max-w-5xl">
@@ -46,6 +48,67 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Modules Section */}
+      {modules.length > 0 && (
+        <section className="mb-16 animate-fade-in">
+          <div className="flex items-center justify-between mb-10">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Modules</h2>
+            <Link
+              href="/modules"
+              className="text-accent hover:text-accent-hover font-medium flex items-center gap-2 group"
+            >
+              View all
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </div>
+          <div className="overflow-x-auto -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 pb-4">
+            <div className="flex gap-6 min-w-max">
+              {modules.map((module, index) => {
+                const modulePosts = getPostsByModule(module.slug)
+                return (
+                  <Link
+                    key={module.slug}
+                    href={`/modules/${module.slug}`}
+                    className="group block w-96 flex-shrink-0 p-6 md:p-8 rounded-2xl border border-border bg-background hover:bg-code-bg/30 hover:border-accent/50 transition-all duration-300 hover:shadow-xl hover:shadow-foreground/5 hover:-translate-y-1 relative overflow-hidden"
+                    style={{ animationDelay: `${index * 100}ms` }}
+                  >
+                    {/* Subtle gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-foreground/0 via-foreground/0 to-foreground/0 group-hover:from-foreground/3 group-hover:via-foreground/2 group-hover:to-foreground/3 transition-all duration-300 rounded-2xl pointer-events-none" />
+                    
+                    <div className="relative flex flex-col h-full">
+                      <div className="flex items-start gap-4 mb-4">
+                        <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center text-accent group-hover:bg-accent/20 transition-colors">
+                          <BookOpen className="w-6 h-6" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-xl md:text-2xl font-bold mb-2 group-hover:text-accent transition-colors tracking-tight">
+                            {module.title}
+                          </h3>
+                        </div>
+                      </div>
+                      {module.description && (
+                        <p className="text-foreground/70 mb-4 line-clamp-3 leading-relaxed">
+                          {module.description}
+                        </p>
+                      )}
+                      <div className="mt-auto pt-4 border-t border-border/50 group-hover:border-accent/30 transition-colors flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-sm text-foreground/60">
+                          <span>{modulePosts.length} {modulePosts.length === 1 ? 'post' : 'posts'}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-accent opacity-0 group-hover:opacity-100 transition-opacity">
+                          <span className="text-sm font-medium">Explore</span>
+                          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Recent Posts Preview */}
       {recentPosts.length > 0 && (
