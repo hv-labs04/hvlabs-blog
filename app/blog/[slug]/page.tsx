@@ -1,11 +1,12 @@
 import { notFound } from 'next/navigation'
 import { getPostBySlug, getAllPosts } from '@/lib/posts'
+import { getModuleBySlug, getNextPostInModule, getPreviousPostInModule, getModuleProgress } from '@/lib/modules'
 import { format } from 'date-fns'
 import Link from 'next/link'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import CodeBlock from '@/components/CodeBlock'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, ArrowRight } from 'lucide-react'
 import type { Metadata } from 'next'
 
 interface PostPageProps {
@@ -55,6 +56,11 @@ export default function PostPage({ params }: PostPageProps) {
     notFound()
   }
 
+  const module = post.module ? getModuleBySlug(post.module) : null
+  const progress = getModuleProgress(post)
+  const nextPost = getNextPostInModule(post)
+  const previousPost = getPreviousPostInModule(post)
+
   return (
     <article className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 max-w-4xl">
       <Link
@@ -64,6 +70,33 @@ export default function PostPage({ params }: PostPageProps) {
         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
         Back to blog
       </Link>
+
+      {/* Module Context */}
+      {module && (
+        <div className="mb-6 p-4 rounded-lg bg-code-bg border border-border">
+          <div className="flex items-center justify-between">
+            <div>
+              <Link
+                href={`/modules/${module.slug}`}
+                className="text-sm font-medium text-foreground/70 hover:text-accent transition-colors"
+              >
+                {module.title}
+              </Link>
+              {progress && (
+                <p className="text-xs text-foreground/60 mt-1">
+                  Part {progress.current} of {progress.total}
+                </p>
+              )}
+            </div>
+            <Link
+              href={`/modules/${module.slug}`}
+              className="text-xs text-foreground/60 hover:text-accent transition-colors"
+            >
+              View all →
+            </Link>
+          </div>
+        </div>
+      )}
 
       <header className="mb-12 animate-fade-in">
         <h1 className="text-4xl md:text-5xl font-bold mb-6 tracking-tight">{post.title}</h1>
@@ -115,6 +148,42 @@ export default function PostPage({ params }: PostPageProps) {
           {post.content}
         </ReactMarkdown>
       </div>
+
+      {/* Module Navigation */}
+      {(previousPost || nextPost) && (
+        <div className="mt-16 pt-8 border-t border-border">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {previousPost && (
+              <Link
+                href={`/blog/${previousPost.slug}`}
+                className="group p-4 rounded-lg border border-border hover:border-accent/50 hover:bg-code-bg/30 transition-all"
+              >
+                <div className="flex items-center gap-2 text-sm text-foreground/60 mb-2">
+                  <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                  Previous
+                </div>
+                <p className="font-medium group-hover:text-accent transition-colors">
+                  {previousPost.title}
+                </p>
+              </Link>
+            )}
+            {nextPost && (
+              <Link
+                href={`/blog/${nextPost.slug}`}
+                className="group p-4 rounded-lg border border-border hover:border-accent/50 hover:bg-code-bg/30 transition-all md:text-right"
+              >
+                <div className="flex items-center gap-2 text-sm text-foreground/60 mb-2 md:justify-end">
+                  Next
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </div>
+                <p className="font-medium group-hover:text-accent transition-colors">
+                  {nextPost.title}
+                </p>
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
     </article>
   )
 }

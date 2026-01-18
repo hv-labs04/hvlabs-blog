@@ -1,14 +1,19 @@
+'use client'
+
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { ArrowRight, Clock } from 'lucide-react'
 import type { Post } from '@/lib/posts'
+import type { Module } from '@/lib/modules'
 
 interface PostCardProps {
   post: Post
   featured?: boolean
+  module?: Module | null
 }
 
-export default function PostCard({ post, featured = false }: PostCardProps) {
+export default function PostCard({ post, featured = false, module }: PostCardProps) {
+
   return (
     <Link href={`/blog/${post.slug}`} className="h-full">
       <article
@@ -23,18 +28,29 @@ export default function PostCard({ post, featured = false }: PostCardProps) {
         <div className="absolute inset-0 bg-gradient-to-br from-foreground/0 via-foreground/0 to-foreground/0 group-hover:from-foreground/3 group-hover:via-foreground/2 group-hover:to-foreground/3 transition-all duration-300 rounded-2xl pointer-events-none" />
         
         <div className="relative flex flex-col h-full">
-          {post.tags && post.tags.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-4">
-              {post.tags.slice(0, 3).map((tag) => (
-                <span
-                  key={tag}
-                  className="text-xs px-3 py-1.5 rounded-full bg-code-bg text-foreground/70 font-medium border border-border backdrop-blur-sm"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          )}
+          <div className="flex flex-wrap gap-2 mb-4">
+            {module && (
+              <Link
+                href={`/modules/${module.slug}`}
+                onClick={(e) => e.stopPropagation()}
+                className="text-xs px-3 py-1.5 rounded-full bg-accent/10 text-accent font-medium border border-accent/20 backdrop-blur-sm hover:bg-accent/20 transition-colors"
+              >
+                {module.title}
+              </Link>
+            )}
+            {post.tags && post.tags.length > 0 && (
+              <>
+                {post.tags.slice(0, module ? 2 : 3).map((tag) => (
+                  <span
+                    key={tag}
+                    className="text-xs px-3 py-1.5 rounded-full bg-code-bg text-foreground/70 font-medium border border-border backdrop-blur-sm"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </>
+            )}
+          </div>
           
           <h2
             className={`

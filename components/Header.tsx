@@ -26,6 +26,12 @@ export default function Header() {
               Blog
             </Link>
             <Link 
+              href="/modules" 
+              className="text-sm font-medium text-foreground/70 hover:text-accent transition-colors hidden sm:block"
+            >
+              Modules
+            </Link>
+            <Link 
               href="/about" 
               className="text-sm font-medium text-foreground/70 hover:text-accent transition-colors hidden sm:block"
             >
