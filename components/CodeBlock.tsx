@@ -57,7 +57,7 @@ export default function CodeBlock({ code, language }: CodeBlockProps) {
             padding: '1.25rem',
             fontSize: '0.875rem',
             lineHeight: '1.7',
-            background: isDark ? '#16162a' : '#f0f4ff',
+            background: isDark ? '#111111' : '#f4f4f5',
           }}
           codeTagProps={{ style: { fontFamily: 'var(--font-mono)' } }}
           showLineNumbers={false}

@@ -86,18 +86,17 @@ export default function Home() {
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
-          <div className="overflow-x-auto -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 pb-4">
-            <div className="flex gap-6 min-w-max">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {modules.map((module, index) => {
                 const modulePosts = getPostsByModule(module.slug)
                 return (
                   <Link
                     key={module.slug}
                     href={`/modules/${module.slug}`}
-                    className="group block w-96 flex-shrink-0 p-6 md:p-8 rounded-2xl border border-border bg-surface hover:border-accent/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_0_1px_rgba(124,58,237,0.2),_0_8px_32px_rgba(124,58,237,0.08)] dark:hover:shadow-[0_0_0_1px_rgba(139,92,246,0.25),_0_8px_32px_rgba(139,92,246,0.10),_0_2px_8px_rgba(0,0,0,0.4)] relative overflow-hidden"
+                    className="group block p-6 rounded-2xl border border-border bg-surface transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_8px_30px_rgba(0,0,0,0.55)] relative overflow-hidden"
                     style={{ animationDelay: `${index * 100}ms` }}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-br from-accent/0 to-accent/0 group-hover:from-accent/[0.06] group-hover:to-accent/[0.12] transition-all duration-300 rounded-2xl pointer-events-none" />
+                    <div className="absolute top-0 inset-x-0 h-0.5 bg-accent origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300 rounded-t-2xl" />
 
                     <div className="relative flex flex-col h-full">
                       <div className="flex items-start gap-4 mb-4">
@@ -129,7 +128,6 @@ export default function Home() {
                   </Link>
                 )
               })}
-            </div>
           </div>
         </section>
       )}
@@ -152,10 +150,10 @@ export default function Home() {
               <Link
                 key={post.slug}
                 href={`/blog/${post.slug}`}
-                className="group block p-6 rounded-2xl border border-border bg-surface hover:border-accent/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_0_1px_rgba(124,58,237,0.2),_0_8px_32px_rgba(124,58,237,0.08)] dark:hover:shadow-[0_0_0_1px_rgba(139,92,246,0.25),_0_8px_32px_rgba(139,92,246,0.10),_0_2px_8px_rgba(0,0,0,0.4)] relative overflow-hidden"
+                className="group block p-6 rounded-2xl border border-border bg-surface transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_8px_30px_rgba(0,0,0,0.55)] relative overflow-hidden"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-accent/0 to-accent/0 group-hover:from-accent/[0.06] group-hover:to-accent/[0.12] transition-all duration-300 rounded-2xl pointer-events-none" />
+                <div className="absolute top-0 inset-x-0 h-0.5 bg-accent origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300 rounded-t-2xl" />
 
                 <div className="relative">
                   {post.tags && post.tags.length > 0 && (

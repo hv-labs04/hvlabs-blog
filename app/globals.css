@@ -3,14 +3,14 @@
 @tailwind utilities;
 
 :root {
-  --background: #fafbff;
-  --surface:    #f0f4ff;
-  --foreground: #0f1629;
-  --accent:     #7c3aed;
-  --accent-hover: #6d28d9;
-  --code-bg:    #f0f4ff;
-  --border:     #dde4f0;
-  --muted:      #5a6780;
+  --background: #fafafa;
+  --surface:    #f4f4f5;
+  --foreground: #09090b;
+  --accent:     #ea580c;
+  --accent-hover: #c2410c;
+  --code-bg:    #f4f4f5;
+  --border:     #e4e4e7;
+  --muted:      #71717a;
 
   --font-sans: 'Space Grotesk', system-ui, sans-serif;
   --font-heading: 'Oswald', system-ui, sans-serif;
@@ -18,14 +18,14 @@
 }
 
 .dark {
-  --background: #0f0f1a;
-  --surface:    #16162a;
-  --foreground: #e2e8f0;
-  --accent:     #8b5cf6;
-  --accent-hover: #a78bfa;
-  --code-bg:    #16162a;
-  --border:     #2d2d4a;
-  --muted:      #94a3b8;
+  --background: #0a0a0a;
+  --surface:    #111111;
+  --foreground: #f5f5f5;
+  --accent:     #f97316;
+  --accent-hover: #fb923c;
+  --code-bg:    #111111;
+  --border:     #1e1e1e;
+  --muted:      #a1a1aa;
 }
 
 * {
@@ -280,9 +280,9 @@ tr:hover td {
 
 /* Card glow effect */
 :root .card-glow {
-  box-shadow: 0 0 0 1px rgba(124,58,237,0.2), 0 8px 24px rgba(124,58,237,0.08);
+  box-shadow: 0 0 0 1px rgba(234,88,12,0.2), 0 8px 24px rgba(234,88,12,0.08);
 }
 
 .dark .card-glow {
-  box-shadow: 0 0 0 1px rgba(139,92,246,0.25), 0 8px 32px rgba(139,92,246,0.12), 0 2px 8px rgba(0,0,0,0.5);
+  box-shadow: 0 0 0 1px rgba(249,115,22,0.25), 0 8px 32px rgba(249,115,22,0.12), 0 2px 8px rgba(0,0,0,0.6);
 }

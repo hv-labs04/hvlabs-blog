@@ -161,8 +161,9 @@ export default function PostPage({ params }: PostPageProps) {
             {previousPost ? (
               <Link
                 href={`/blog/${previousPost.slug}`}
-                className="group p-6 rounded-xl border border-border bg-surface hover:border-accent/50 transition-all hover:shadow-[0_0_0_1px_rgba(124,58,237,0.2),_0_8px_24px_rgba(124,58,237,0.08)] dark:hover:shadow-[0_0_0_1px_rgba(139,92,246,0.25),_0_8px_32px_rgba(139,92,246,0.10)]"
+                className="group relative p-6 rounded-xl border border-border bg-surface transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_8px_30px_rgba(0,0,0,0.55)] overflow-hidden"
               >
+                <div className="absolute top-0 inset-x-0 h-0.5 bg-accent origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300 rounded-t-xl" />
                 <div className="flex items-center gap-2 text-xs font-medium text-foreground/50 uppercase tracking-wider mb-2">
                   <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" />
                   Previous Post
@@ -175,8 +176,9 @@ export default function PostPage({ params }: PostPageProps) {
             {nextPost && (
               <Link
                 href={`/blog/${nextPost.slug}`}
-                className="group p-6 rounded-xl border border-border bg-surface hover:border-accent/50 transition-all hover:shadow-[0_0_0_1px_rgba(124,58,237,0.2),_0_8px_24px_rgba(124,58,237,0.08)] dark:hover:shadow-[0_0_0_1px_rgba(139,92,246,0.25),_0_8px_32px_rgba(139,92,246,0.10)] md:text-right"
+                className="group relative p-6 rounded-xl border border-border bg-surface transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_8px_30px_rgba(0,0,0,0.55)] overflow-hidden md:text-right"
               >
+                <div className="absolute top-0 inset-x-0 h-0.5 bg-accent origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300 rounded-t-xl" />
                 <div className="flex items-center gap-2 text-xs font-medium text-foreground/50 uppercase tracking-wider mb-2 md:justify-end">
                   Next Post
                   <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
