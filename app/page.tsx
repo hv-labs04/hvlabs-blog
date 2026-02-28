@@ -35,7 +35,7 @@ export default function Home() {
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 max-w-5xl">
       {/* Hero Section */}
-      <section className="mb-20 rounded-3xl p-8 md:p-12 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
+      <section className="mb-20 animate-fade-in rounded-3xl p-8 md:p-12 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
         <h1 className="text-6xl md:text-7xl font-bold mb-6 tracking-tight text-foreground">
           Hi, I&apos;m Vishnu
         </h1>
@@ -94,7 +94,7 @@ export default function Home() {
                   <Link
                     key={module.slug}
                     href={`/modules/${module.slug}`}
-                    className="group block w-96 flex-shrink-0 p-6 md:p-8 rounded-2xl border border-border bg-surface hover:border-accent/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_0_1px_rgba(245,158,11,0.2),_0_8px_32px_rgba(245,158,11,0.08)] dark:hover:shadow-[0_0_0_1px_rgba(245,158,11,0.25),_0_8px_32px_rgba(245,158,11,0.10),_0_2px_8px_rgba(0,0,0,0.4)] relative overflow-hidden"
+                    className="group block w-96 flex-shrink-0 p-6 md:p-8 rounded-2xl border border-border bg-surface hover:border-accent/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_0_1px_rgba(124,58,237,0.2),_0_8px_32px_rgba(124,58,237,0.08)] dark:hover:shadow-[0_0_0_1px_rgba(139,92,246,0.25),_0_8px_32px_rgba(139,92,246,0.10),_0_2px_8px_rgba(0,0,0,0.4)] relative overflow-hidden"
                     style={{ animationDelay: `${index * 100}ms` }}
                   >
                     <div className="absolute inset-0 bg-gradient-to-br from-accent/0 to-accent/0 group-hover:from-accent/[0.06] group-hover:to-accent/[0.12] transition-all duration-300 rounded-2xl pointer-events-none" />
@@ -152,7 +152,7 @@ export default function Home() {
               <Link
                 key={post.slug}
                 href={`/blog/${post.slug}`}
-                className="group block p-6 rounded-2xl border border-border bg-surface hover:border-accent/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_0_1px_rgba(245,158,11,0.2),_0_8px_32px_rgba(245,158,11,0.08)] dark:hover:shadow-[0_0_0_1px_rgba(245,158,11,0.25),_0_8px_32px_rgba(245,158,11,0.10),_0_2px_8px_rgba(0,0,0,0.4)] relative overflow-hidden"
+                className="group block p-6 rounded-2xl border border-border bg-surface hover:border-accent/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_0_1px_rgba(124,58,237,0.2),_0_8px_32px_rgba(124,58,237,0.08)] dark:hover:shadow-[0_0_0_1px_rgba(139,92,246,0.25),_0_8px_32px_rgba(139,92,246,0.10),_0_2px_8px_rgba(0,0,0,0.4)] relative overflow-hidden"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-accent/0 to-accent/0 group-hover:from-accent/[0.06] group-hover:to-accent/[0.12] transition-all duration-300 rounded-2xl pointer-events-none" />

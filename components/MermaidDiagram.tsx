@@ -20,32 +20,32 @@ export default function MermaidDiagram({ chart }: { chart: string }) {
       theme: 'base',
       themeVariables: {
         // Background & canvas
-        background: isDark ? '#0d1117' : '#fafbff',
-        mainBkg: isDark ? '#1e2a40' : '#fef3c7',
-        secondaryBkg: isDark ? '#161b22' : '#f0f4ff',
+        background: isDark ? '#0f0f1a' : '#fafbff',
+        mainBkg: isDark ? '#1e1a3a' : '#ede9fe',
+        secondaryBkg: isDark ? '#16162a' : '#f0f4ff',
 
         // Node border & text
-        primaryBorderColor: isDark ? '#f59e0b' : '#d97706',
-        primaryTextColor: isDark ? '#e6edf3' : '#0f1629',
-        secondaryTextColor: isDark ? '#8b949e' : '#5a6780',
-        lineColor: isDark ? '#f59e0b' : '#d97706',
+        primaryBorderColor: isDark ? '#8b5cf6' : '#7c3aed',
+        primaryTextColor: isDark ? '#e2e8f0' : '#0f1629',
+        secondaryTextColor: isDark ? '#94a3b8' : '#5a6780',
+        lineColor: isDark ? '#8b5cf6' : '#7c3aed',
 
         // Primary nodes (default boxes)
-        primaryColor: isDark ? '#1e2a40' : '#fef3c7',
+        primaryColor: isDark ? '#1e1a3a' : '#ede9fe',
 
         // Cluster/subgraph
-        clusterBkg: isDark ? '#0d1117' : '#f0f4ff',
-        clusterBorder: isDark ? '#30363d' : '#dde4f0',
+        clusterBkg: isDark ? '#0f0f1a' : '#f0f4ff',
+        clusterBorder: isDark ? '#2d2d4a' : '#dde4f0',
 
         // Font
         fontFamily: 'Space Grotesk, system-ui, sans-serif',
         fontSize: '14px',
 
         // Edge labels
-        edgeLabelBackground: isDark ? '#0d1117' : '#fafbff',
+        edgeLabelBackground: isDark ? '#0f0f1a' : '#fafbff',
 
         // Arrow
-        arrowheadColor: isDark ? '#f59e0b' : '#d97706',
+        arrowheadColor: isDark ? '#8b5cf6' : '#7c3aed',
       },
       flowchart: {
         htmlLabels: true,

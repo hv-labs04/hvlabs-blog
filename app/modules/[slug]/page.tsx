@@ -93,11 +93,11 @@ export default function ModulePage({ params }: ModulePageProps) {
           <Link
             key={post.slug}
             href={`/blog/${post.slug}`}
-            className="group block p-6 md:p-8 rounded-xl border border-border bg-background/50 hover:bg-code-bg/30 hover:border-accent/50 transition-all duration-300 hover:shadow-lg relative overflow-hidden"
+            className="group block p-6 md:p-8 rounded-2xl border border-border bg-surface hover:border-accent/50 transition-all duration-300 hover:shadow-[0_0_0_1px_rgba(124,58,237,0.2),_0_8px_32px_rgba(124,58,237,0.08)] dark:hover:shadow-[0_0_0_1px_rgba(139,92,246,0.25),_0_8px_32px_rgba(139,92,246,0.10),_0_2px_8px_rgba(0,0,0,0.4)] relative overflow-hidden"
           >
             <div className="flex gap-4">
               <div className="flex-shrink-0 pt-0.5">
-                <div className="w-10 h-10 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center text-sm font-bold text-accent group-hover:bg-accent/20 transition-colors">
+                <div className="w-10 h-10 rounded-lg bg-accent text-background flex items-center justify-center text-sm font-bold">
                   {index + 1}
                 </div>
               </div>

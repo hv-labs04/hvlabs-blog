@@ -77,7 +77,7 @@ export default function PostPage({ params }: PostPageProps) {
         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
         Back to {moduleData.title} Module
       </Link>
-      <div className="mb-6 p-4 rounded-lg border-l-4 border-accent" style={{ background: 'linear-gradient(to right, color-mix(in srgb, var(--accent) 6%, transparent), color-mix(in srgb, var(--code-bg) 40%, transparent))' }}>
+      <div className="mb-6 p-4 rounded-lg bg-surface border-l-4 border-accent">
         <div className="flex items-center justify-between">
           <div>
             <Link
@@ -161,7 +161,7 @@ export default function PostPage({ params }: PostPageProps) {
             {previousPost ? (
               <Link
                 href={`/blog/${previousPost.slug}`}
-                className="group p-6 rounded-xl border border-border hover:border-accent/50 hover:bg-code-bg/30 transition-all"
+                className="group p-6 rounded-xl border border-border bg-surface hover:border-accent/50 transition-all hover:shadow-[0_0_0_1px_rgba(124,58,237,0.2),_0_8px_24px_rgba(124,58,237,0.08)] dark:hover:shadow-[0_0_0_1px_rgba(139,92,246,0.25),_0_8px_32px_rgba(139,92,246,0.10)]"
               >
                 <div className="flex items-center gap-2 text-xs font-medium text-foreground/50 uppercase tracking-wider mb-2">
                   <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" />
@@ -175,7 +175,7 @@ export default function PostPage({ params }: PostPageProps) {
             {nextPost && (
               <Link
                 href={`/blog/${nextPost.slug}`}
-                className="group p-6 rounded-xl border border-border hover:border-accent/50 hover:bg-code-bg/30 transition-all md:text-right"
+                className="group p-6 rounded-xl border border-border bg-surface hover:border-accent/50 transition-all hover:shadow-[0_0_0_1px_rgba(124,58,237,0.2),_0_8px_24px_rgba(124,58,237,0.08)] dark:hover:shadow-[0_0_0_1px_rgba(139,92,246,0.25),_0_8px_32px_rgba(139,92,246,0.10)] md:text-right"
               >
                 <div className="flex items-center gap-2 text-xs font-medium text-foreground/50 uppercase tracking-wider mb-2 md:justify-end">
                   Next Post

@@ -21,8 +21,8 @@ export default function PostCard({ post, featured = false, module }: PostCardPro
           group relative rounded-2xl border border-border bg-surface p-6 md:p-8
           hover:border-accent/50 transition-all duration-300
           hover:-translate-y-1 overflow-hidden h-full flex flex-col
-          hover:shadow-[0_0_0_1px_rgba(245,158,11,0.2),_0_8px_32px_rgba(245,158,11,0.08)]
-          dark:hover:shadow-[0_0_0_1px_rgba(245,158,11,0.25),_0_8px_32px_rgba(245,158,11,0.10),_0_2px_8px_rgba(0,0,0,0.4)]
+          hover:shadow-[0_0_0_1px_rgba(124,58,237,0.2),_0_8px_32px_rgba(124,58,237,0.08)]
+          dark:hover:shadow-[0_0_0_1px_rgba(139,92,246,0.25),_0_8px_32px_rgba(139,92,246,0.10),_0_2px_8px_rgba(0,0,0,0.4)]
           ${featured ? 'lg:col-span-2' : ''}
         `}
       >
