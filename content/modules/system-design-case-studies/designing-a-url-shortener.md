@@ -1,942 +1,405 @@
 ---
-title: "Designing a URL Shortener"
-slug: "designing-a-url-shortener"
+title: "Design a URL Shortener"
 date: "2024-01-15"
-description: "A deep dive into designing a scalable URL shortener service like bit.ly or TinyURL"
-tags: ["system-design", "url-shortener", "distributed-systems", "scalability"]
-featured: false
-draft: false
-module: "system-design-case-studies"
-moduleOrder: 1
+description: "Design a URL shortener like bit.ly — unique ID generation, 302 vs 301 redirects, caching strategy, and scaling to billions of redirects per day"
+tags: ["System Design", "Case Study", "URL Shortener", "Caching"]
 ---
 
-URL shorteners are a classic system design interview problem. They seem simple on the surface—just convert a long URL to a short one, right? But designing one that can handle millions of requests requires careful consideration of scalability, storage, and performance. Let&apos;s walk through designing a production-ready URL shortener step by step, explaining the reasoning behind each decision.
+## Requirements
 
-## Understanding the Problem
+**Functional:**
+- Given a long URL, generate a short URL (e.g. `short.ly/aB3kPq`)
+- Redirect short URL to original long URL
+- Optional: custom aliases (`short.ly/my-brand`)
+- Optional: URL expiration with configurable TTL
 
-Before we start designing, let&apos;s understand what we&apos;re building. A URL shortener takes a long URL like:
+**Non-functional:**
+- 100M URLs stored, growing at 55K new URLs/day
+- Read-heavy: 100:1 read-to-write ratio — optimize for redirects
+- Redirect latency: < 10ms p99
+- 99.99% availability — a broken redirect is a broken link for millions of users
+- Short codes must be globally unique — two URLs must never share a code
 
-```
-https://www.example.com/articles/2024/01/15/very-long-article-title-that-goes-on-and-on
-```
+**Out of scope:** User accounts, analytics dashboard, link preview cards.
 
-And converts it to something short like:
+---
 
-```
-https://short.ly/abc123
-```
+## Capacity Estimation
 
-When someone visits the short URL, they get redirected to the original long URL. Simple concept, but let&apos;s think about what makes this challenging at scale.
+| Metric | Calculation | Result |
+|--------|-------------|--------|
+| Write QPS | 55K URLs/day ÷ 86,400 | **~0.64 writes/sec** |
+| Read QPS (avg) | 0.64 × 100 (read ratio) | **~64 reads/sec** |
+| Peak read QPS | 64 × 10 (viral link spikes) | **~640 reads/sec** |
+| Storage per URL | 500B (long URL) + 50B (metadata) | **~550 bytes** |
+| Total storage (100M URLs) | 100M × 550B | **~55 GB** |
+| Cache for hot 20% | 20M × 550B | **~11 GB** |
+| Read bandwidth | 640 RPS × 500B | **~320 KB/s** |
 
-## Step 1: Gathering Requirements
+**Key insight:** Write load is trivially small (< 1 QPS). The entire design centers on making reads — redirects — as fast as possible. Everything else is secondary.
 
-### Functional Requirements
+---
 
-Let&apos;s start by defining what our system must do:
+## High-Level Architecture
 
-1. **Shorten URLs**: Convert long URLs to short, unique aliases
-2. **Redirect**: When users access the short URL, redirect to the original URL
-3. **Custom Aliases**: Allow users to create custom short URLs (optional but common)
-4. **Expiration**: URLs can optionally expire after a set time
+```mermaid
+flowchart LR
+    Client([Client])
+    LB[Load Balancer]
+    API[API Servers\nStateless]
+    Cache[(Redis\n~11 GB hot cache)]
+    DB[(Cassandra\nSharded by short code)]
+    Range[Range Allocator\netcd-backed]
 
-**Why these requirements?** The first two are core functionality. Custom aliases are important for branding (companies want `short.ly/mybrand`). Expiration helps manage storage and prevents abuse.
-
-### Non-Functional Requirements
-
-Now, what about performance and scale?
-
-1. **High Availability**: System should be highly available (99.9%+)
-2. **Low Latency**: URL redirection should be fast (< 100ms)
-3. **Scalable**: Handle 100M+ URLs and 1000+ RPS
-4. **Unique**: Short URLs must be unique (no collisions)
-5. **Read-Heavy**: Read-to-write ratio is about 100:1
-
-**Why these numbers?** Let&apos;s think about real-world usage:
-- People create short URLs occasionally (writes)
-- But those URLs get clicked many times (reads)
-- A viral link might get millions of clicks
-- Users expect instant redirects—any delay feels broken
-
-## Step 2: Capacity Estimation
-
-Before designing, we need to understand the scale. Let&apos;s do some back-of-the-envelope calculations:
-
-### Traffic Estimation
-
-**Assumptions:**
-- 100 million URLs stored
-- Each URL gets clicked 100 times on average (read-heavy)
-- URLs created over 5 years = 100M URLs / (5 years × 365 days) ≈ 55,000 URLs/day
-- Daily clicks = 100M URLs × 100 clicks = 10 billion clicks/day
-
-**Calculations:**
-- **Write traffic**: 55,000 URLs/day ÷ (24 × 3600) ≈ 0.64 RPS
-- **Read traffic**: 10 billion clicks/day ÷ (24 × 3600) ≈ 115,740 RPS
-- **Peak traffic**: Assume 3x average = ~350,000 RPS for reads, ~2 RPS for writes
-
-**Why estimate?** These numbers help us understand:
-- We need to optimize for reads, not writes
-- We&apos;ll need caching aggressively
-- Database writes aren&apos;t the bottleneck
-
-### Storage Estimation
-
-**Per URL:**
-- Long URL: ~500 bytes average
-- Short URL: 7 bytes (we&apos;ll explain why 7 later)
-- Metadata (created_at, expiration, user_id): ~50 bytes
-- **Total per URL**: ~557 bytes
-
-**Total Storage:**
-- 100M URLs × 557 bytes = ~55.7 GB
-
-**Why this matters:** 55GB is manageable. We don&apos;t need complex storage solutions initially, but we&apos;ll need to plan for growth.
-
-### Bandwidth Estimation
-
-**Write bandwidth:**
-- 2 RPS × 500 bytes = 1 KB/s (negligible)
-
-**Read bandwidth:**
-- 350,000 RPS × 500 bytes = 175 MB/s (significant!)
-
-**Why this matters:** Read bandwidth is high. We&apos;ll need caching and CDN to reduce bandwidth costs.
-
-## Step 3: API Design
-
-Let&apos;s design our APIs. This helps us think about what data we need and how clients will interact with our system.
-
-### Shorten URL API
-
-```
-POST /api/v1/shorten
-Content-Type: application/json
-
-Request:
-{
-  "longUrl": "https://example.com/very/long/url",
-  "customAlias": "my-custom-link",  // optional
-  "expirationDate": "2024-12-31"     // optional
-}
-
-Response:
-{
-  "shortUrl": "https://short.ly/abc123",
-  "expirationDate": "2024-12-31"
-}
+    Client --> LB
+    LB --> API
+    API -->|1 - check cache| Cache
+    Cache -->|miss| DB
+    API -->|write new URL| DB
+    API -->|get next ID range| Range
+    API -->|populate cache on write| Cache
 ```
 
-**Design decisions:**
-- POST because we&apos;re creating a resource
-- Custom alias is optional—we&apos;ll generate one if not provided
-- Expiration is optional—some URLs should live forever
-- Return the short URL immediately so users can copy it
+---
 
-### Redirect API
+## Deep Dive: Short Code Generation
 
-```
-GET /{shortUrl}
-Response: 301 Moved Permanently
-Location: https://example.com/very/long/url
-```
+This is the most interesting part. We need codes that are **short**, **unique**, and **fast to generate** without coordination on every request.
 
-**Why 301 instead of 302?** 
-- 301 (Permanent Redirect): Search engines transfer SEO value to the original URL
-- 302 (Temporary Redirect): Search engines keep the short URL in their index
-- For URL shorteners, 301 is usually better—we want the original URL to get the SEO benefit
+### Why not random strings?
 
-**Why GET?** Redirects are idempotent—same request, same result. GET is the right HTTP method.
-
-## Step 4: Database Design
-
-Now we need to store the mapping between short URLs and long URLs. Let&apos;s think about our options.
-
-### What Data Do We Need?
-
-- Short URL (primary key)
-- Long URL (what we redirect to)
-- Created timestamp (for analytics, expiration)
-- Expiration date (optional)
-- User ID (if we have user accounts)
-- Click count (for analytics)
-
-### Option 1: Relational Database (SQL)
-
-```sql
-CREATE TABLE urls (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    short_url VARCHAR(7) UNIQUE NOT NULL,
-    long_url TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    expiration_date TIMESTAMP NULL,
-    user_id BIGINT NULL,
-    click_count BIGINT DEFAULT 0,
-    INDEX idx_short_url (short_url),
-    INDEX idx_expiration (expiration_date)
-);
+```python
+# Bad: random generation
+import secrets, string
+code = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(7))
+# Problem: must check DB for collision on EVERY generation
+# At scale: 100M URLs → birthday problem → ~1.5% collision rate at 7 chars
+# Each collision = extra DB round-trip + retry
 ```
 
-**Pros:**
-- ACID guarantees (consistency)
-- Easy to query (find expired URLs, user&apos;s URLs)
-- Well-understood technology
-- Good for complex queries
+Random generation forces a DB lookup to verify uniqueness on every write. At scale, collision retries pile up. **Reject this.**
 
-**Cons:**
-- Harder to scale horizontally
-- Can become a bottleneck at high write rates
-- Joins can be slow at scale
+### Why not MD5/SHA hash of the URL?
 
-**When to use:** If we need strong consistency and complex queries, SQL is good. But for 350K reads/second, we&apos;ll need heavy caching anyway.
-
-### Option 2: NoSQL (Document Store)
-
-```json
-{
-  "shortUrl": "abc123",
-  "longUrl": "https://example.com/very/long/url",
-  "createdAt": "2024-01-15T10:00:00Z",
-  "expirationDate": "2024-12-31T23:59:59Z",
-  "userId": "user123",
-  "clickCount": 0
-}
+```python
+# Bad: hash the URL
+import hashlib
+h = hashlib.md5(long_url.encode()).hexdigest()[:7]  # e.g. "1a2b3c4"
 ```
 
-**Pros:**
-- Easier to scale horizontally
-- Better performance for simple key-value lookups
-- Flexible schema (easy to add fields)
-- Can handle high read/write loads
+Two problems:
+1. **Same URL → same code** — user shortens the same URL twice and gets the same short code. Do we return the existing entry or create a new one? Either answer has annoying edge cases.
+2. **Still needs collision check** — different long URLs can hash to the same 7-char prefix. Still requires a DB lookup.
 
-**Cons:**
-- Weaker consistency guarantees
-- Harder to do complex queries
-- Need to handle eventual consistency
+**Reject this.**
 
-**When to use:** For a URL shortener, most operations are simple lookups by short URL. NoSQL fits well here.
+### The right answer: Counter → Base62 encoding
 
-### Our Decision: Start with SQL, Plan for NoSQL
+Every URL gets a unique integer ID from a counter. Encode that integer in Base62 (`a-z A-Z 0-9`).
 
-**Reasoning:**
-- Initially, SQL is simpler and provides strong guarantees
-- We can migrate to NoSQL later if we hit scale issues
-- Most URL shorteners start simple and evolve
+```python
+BASE62_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
-**Key insight:** We&apos;ll cache aggressively anyway, so database choice matters less for reads. For writes, SQL auto-increment can work initially.
+def to_base62(n: int) -> str:
+    if n == 0:
+        return BASE62_CHARS[0]
+    result = []
+    while n:
+        result.append(BASE62_CHARS[n % 62])
+        n //= 62
+    return ''.join(reversed(result))
 
-## Step 5: Generating Short URLs
-
-This is one of the most interesting parts. How do we generate short, unique URLs?
-
-### Requirements for Short URLs
-
-1. **Short**: 6-8 characters (shorter is better for sharing)
-2. **Unique**: No collisions
-3. **Readable**: Avoid confusing characters (0/O, 1/l/I)
-4. **Fast to generate**: Can&apos;t be a bottleneck
-
-### Character Set: Base62
-
-We&apos;ll use Base62 encoding: `a-z`, `A-Z`, `0-9` (62 characters total).
+to_base62(1)          # → "b"
+to_base62(1_000_000)  # → "4c92"
+to_base62(3_521_614_606_208)  # → "zzzzzz" (max 6 chars)
+```
 
 **Why Base62?**
-- More characters than Base36 (0-9, a-z) = shorter URLs
-- Fewer characters than Base64 (which includes +, /, =)
-- URL-safe (no special characters)
-- Human-readable
+- Base62 is URL-safe — no `+`, `/`, `=` like Base64 which break in URLs
+- 6 chars = 62^6 = **56.8 billion unique codes** — enough for centuries at our write rate
+- Pure deterministic math — no DB lookup needed, **zero collision probability**
 
-**How many characters do we need?**
+**Why a counter and not a hash?**
+A counter gives you a monotonically increasing integer. Encode it to Base62 and you're done. No collisions, no lookups, no retries.
 
-- 6 characters: 62^6 = 56.8 billion combinations
-- 7 characters: 62^7 = 3.5 trillion combinations
-- 8 characters: 62^8 = 218 trillion combinations
+### The distributed counter problem
 
-For 100M URLs with room to grow, **7 characters** is perfect. We get 3.5 trillion combinations—enough for centuries of growth.
+A single counter is a single point of failure. The solution: **range-based pre-allocation**.
 
-### Approach 1: Hash-Based Generation
+```
+etcd holds the global counter: currently at 5,000,000
 
-```python
-import hashlib
-import base62
+Server A starts up:
+  → Asks etcd for a range: "give me 1,000 IDs"
+  → etcd atomically advances counter to 5,001,000
+  → etcd returns range [5,000,000, 5,001,000)
+  → Server A now generates IDs 5,000,000 to 5,000,999 locally — no network round-trips
 
-def generate_short_url(long_url):
-    # Add timestamp to ensure uniqueness
-    hash_input = long_url + str(time.time())
-    hash_value = hashlib.md5(hash_input.encode()).hexdigest()
-    # Take first 7 characters
-    short_url = base62.encode(int(hash_value[:7], 16))
-    return short_url[:7]
+Server B starts up simultaneously:
+  → Gets range [5,001,000, 5,002,000)
+  → Zero conflict with Server A
 ```
 
-**Pros:**
-- Deterministic (same URL + timestamp = same short URL)
-- No need for a counter service
-- Can generate offline
-
-**Cons:**
-- **Collisions possible**: Even with 3.5T combinations, hash collisions can happen
-- **Need to check uniqueness**: Must query database to verify
-- **Retry logic**: If collision, regenerate (could be slow)
-- **Not sequential**: Can&apos;t predict next URL
-
-**When collisions happen:**
-- Two different long URLs might hash to the same short URL
-- We&apos;d need to detect this and retry
-- At scale, this becomes a problem
-
-### Approach 2: Counter-Based Generation (Better)
-
-Instead of hashing, use a counter that generates unique IDs, then encode them.
-
 ```python
-import base62
+import threading
 
-def generate_short_url(counter_id):
-    # Counter gives us: 1, 2, 3, 4, ...
-    # Encode to Base62: a, b, c, d, ...
-    return base62.encode(counter_id)[:7]
+class RangeAllocator:
+    RANGE_SIZE = 1000
+
+    def __init__(self, etcd_client):
+        self.etcd = etcd_client
+        self.lock = threading.Lock()
+        self._fetch_new_range()  # Fetch on startup
+
+    def _fetch_new_range(self):
+        # etcd compare-and-swap: atomically increment global counter
+        start = self.etcd.atomic_increment("global_counter", self.RANGE_SIZE)
+        self.current = start
+        self.end = start + self.RANGE_SIZE
+
+    def next_id(self) -> int:
+        with self.lock:  # Thread-safe within one server
+            if self.current >= self.end:
+                self._fetch_new_range()
+            id = self.current
+            self.current += 1
+            return id
 ```
 
-**Pros:**
-- **Guaranteed uniqueness**: Counter ensures no collisions
-- **No database lookup needed**: Just increment counter
-- **Predictable**: Can pre-generate URLs
-- **Simple**: Easy to understand and debug
+**Why etcd (not a DB row)?**
+- etcd uses the Raft consensus algorithm — writes are linearizable. No two servers can get overlapping ranges even under network partitions.
+- A DB row with `SELECT FOR UPDATE` would work but adds latency and becomes a write bottleneck under high concurrency. etcd's atomic increment is purpose-built for this.
 
-**Cons:**
-- **Single point of failure**: Counter service must be highly available
-- **Sequential**: URLs are predictable (security consideration)
-- **Needs coordination**: In distributed system, need to coordinate counters
+**Why a range of 1,000?**
+Each server needs only 1 etcd round-trip per 1,000 URLs it shortens. At 0.64 writes/sec globally, this means one etcd call every ~25 minutes per server. Negligible overhead.
 
-**Why we choose this:** For a URL shortener, uniqueness is critical. Counter-based approach guarantees uniqueness and is simpler to reason about.
+---
 
-### Implementing the Counter Service
+## Deep Dive: The Redirect Path
 
-We need a service that generates unique, sequential IDs. Here are options:
+This is the **hot path** — every click on a short URL hits this. It must be as fast as possible.
 
-#### Option A: Database Auto-Increment
+### 302 vs 301 — a critical decision
+
+This is one of the most commonly confused points in URL shortener design.
+
+| Code | Meaning | Browser behaviour | Analytics impact |
+|------|---------|-------------------|-----------------|
+| **301** Moved Permanently | The resource has permanently moved | Browser caches the redirect forever — **never hits your server again** | You lose all click data after first visit |
+| **302** Found (Temporary) | The resource is temporarily at this location | Browser re-requests every time | **You see every click** |
+
+**Use 302.** Always.
+
+The entire value of bit.ly, TinyURL, and every production URL shortener is **analytics** — knowing how many clicks, from where, on what device. A 301 redirect destroys this: after the first click, the browser goes directly to the destination and your service is bypassed forever.
+
+The "SEO transfer" argument for 301 doesn't apply here — the short URL is not a web page competing for search rankings.
+
+### Redirect flow
+
+```python
+def redirect(short_code: str):
+    # Step 1: Check Redis cache (~0.1ms)
+    long_url = cache.get(f"url:{short_code}")
+
+    if long_url is None:
+        # Step 2: Cache miss — query Cassandra (~5ms)
+        row = db.execute("SELECT long_url, expires_at FROM urls WHERE code = ?", short_code)
+
+        if row is None:
+            raise NotFound()
+
+        # Step 3: Check expiration
+        if row.expires_at and row.expires_at < now():
+            raise Gone()  # HTTP 410 — existed but expired (not 404)
+
+        long_url = row.long_url
+        ttl = seconds_until(row.expires_at) if row.expires_at else 86400
+        cache.set(f"url:{short_code}", long_url, ex=ttl)
+
+    # Step 4: Record click asynchronously (fire-and-forget)
+    analytics_queue.publish({"code": short_code, "ts": now(), "ip": request.ip})
+
+    # Step 5: Redirect
+    return Response(status=302, headers={"Location": long_url})
+```
+
+**Why 410 and not 404 for expired URLs?**
+404 means "this resource never existed." 410 means "it existed but has been removed." An expired URL *did* exist — 410 is semantically correct and tells clients (and search engine crawlers) not to retry.
+
+**Why record clicks asynchronously?**
+The redirect itself must be fast — the user is waiting for the page. Writing a click event synchronously adds a DB write to every redirect. Instead, publish to a Kafka topic. A separate analytics worker processes events in bulk at its own pace. The redirect returns in < 2ms; the click gets recorded eventually.
+
+---
+
+## Deep Dive: Caching Strategy
+
+With ~640 peak read QPS, caching is our primary performance lever.
+
+### Cache-aside (lazy population)
+
+We use the cache-aside pattern (also called lazy loading):
+
+1. Check Redis first
+2. On miss: query Cassandra, populate Redis, return result
+3. On hit: return from Redis directly
+
+**Why not write-through?** Write-through populates the cache on every write regardless of whether the URL will ever be read. We have 100M URLs but only ~20M are ever actively accessed. Write-through wastes memory on URLs no one clicks. Cache-aside only caches what's actually accessed.
+
+### Cache key and TTL
+
+```
+Key: "url:{short_code}"         → e.g. "url:aB3kPq"
+Value: long URL string
+TTL: min(URL expiration, 24h)   → expires before the URL does
+```
+
+**Why TTL = min(expiration, 24h)?** If a URL expires in 6 hours, don't cache it for 24 — the redirect would serve a stale (expired) URL. If no expiration is set, 24 hours is a reasonable refresh window.
+
+### Cache sizing
+
+Top 20% of URLs receive ~80% of traffic (Pareto principle). That's 20M URLs × 550 bytes ≈ **11 GB of Redis**. A single Redis instance handles this comfortably with headroom.
+
+When to scale to Redis Cluster: when your hot working set exceeds a single node's memory, or when reads exceed ~100K QPS (Redis single-node limit).
+
+---
+
+## Data Model
+
+A URL shortener is essentially a key-value store. The data is simple:
+
+```
+short_code (partition key) → long_url, created_at, expires_at, user_id
+```
+
+### Why Cassandra and not PostgreSQL?
+
+| Criteria | PostgreSQL | Cassandra |
+|----------|-----------|-----------|
+| Access pattern | Read by short_code (single key) | Read by short_code (single key) |
+| Writes | Fine at 1 QPS | Overkill |
+| Horizontal scale | Manual sharding, complex | Built-in, add nodes |
+| Joins / complex queries | Full SQL support | No joins |
+| Operational simplicity | Simpler for small scale | More to operate |
+
+The access pattern is pure key lookup — `WHERE code = ?`. There are no JOINs, no ORDER BY across the table, no aggregates. This is exactly what Cassandra optimizes for, and it scales horizontally without any manual sharding work on our part.
+
+**But for a small deployment:** PostgreSQL is completely fine. The read volume (640 QPS) is trivial for Postgres with an index on `short_code`. Use Postgres until you actually need scale, then migrate. Don't over-engineer day one.
+
+### Schema
 
 ```sql
-CREATE TABLE counter (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY
+-- Cassandra
+CREATE TABLE urls (
+    short_code  TEXT,
+    long_url    TEXT,
+    created_at  TIMESTAMP,
+    expires_at  TIMESTAMP,   -- NULL means no expiration
+    user_id     UUID,        -- NULL means anonymous
+    PRIMARY KEY (short_code)
 );
 
--- Get next ID
-INSERT INTO counter () VALUES ();
-SELECT LAST_INSERT_ID();
+-- Index for "show me all URLs this user created"
+CREATE TABLE urls_by_user (
+    user_id     UUID,
+    created_at  TIMESTAMP,
+    short_code  TEXT,
+    long_url    TEXT,
+    PRIMARY KEY (user_id, created_at)
+) WITH CLUSTERING ORDER BY (created_at DESC);
 ```
 
-**Pros:**
-- Simple
-- Built into most databases
-- ACID guarantees
+**Why a separate `urls_by_user` table?**
+Cassandra doesn't support secondary indexes efficiently at scale. To query "all URLs for user X", we'd need to scatter-gather across all nodes. The solution is a second table denormalized by user_id. This is normal in Cassandra — model your tables around your query patterns.
 
-**Cons:**
-- **Single bottleneck**: All writes go through one database
-- **Hard to scale**: Can&apos;t easily distribute
-- **Latency**: Database round-trip for every URL
+---
 
-**When to use:** Good for MVP, but won&apos;t scale to thousands of writes/second.
+## Handling Edge Cases
 
-#### Option B: Range-Based Allocation
+### Custom aliases
 
-Pre-allocate ranges to different servers:
+When a user requests `short.ly/my-brand`:
 
-```
-Server 1: IDs 1 - 1,000,000
-Server 2: IDs 1,000,001 - 2,000,000
-Server 3: IDs 2,000,001 - 3,000,000
-...
-```
+1. Check if `my-brand` already exists in the DB
+2. If it exists and belongs to a **different** user → return `409 Conflict`
+3. If it exists and belongs to **the same** user → allow update (idempotent re-creation)
+4. If it doesn't exist → create it without going through the counter service (custom code bypasses ID generation)
 
-Each server maintains its own counter within its range.
+### Malicious URL filtering
 
-**Pros:**
-- **Distributed**: Multiple servers can generate IDs
-- **No coordination needed**: Each server works independently
-- **Scalable**: Add more servers = more capacity
-
-**Cons:**
-- **Wasted IDs**: If server 1 runs out, we can&apos;t use its range
-- **Management overhead**: Need to track and allocate ranges
-- **Uneven distribution**: Some servers might exhaust ranges faster
-
-**How to implement:**
-- Use Zookeeper/etcd to coordinate range allocation
-- When a server starts, it requests a range
-- Server tracks its current counter locally
-- When range exhausted, request new range
-
-#### Option C: Twitter Snowflake-Style
-
-Generate IDs with timestamp + machine ID + sequence:
-
-```
-64-bit ID:
-- 41 bits: Timestamp (milliseconds)
-- 10 bits: Machine ID
-- 12 bits: Sequence number
-```
-
-**Pros:**
-- **Distributed**: No coordination needed
-- **Time-ordered**: IDs are roughly chronological
-- **Scalable**: Can generate millions per second per machine
-
-**Cons:**
-- **More complex**: Need to manage machine IDs
-- **Clock dependency**: Requires synchronized clocks
-- **Longer IDs**: Might need more than 7 characters
-
-**When to use:** For very high scale, this is excellent. But for URL shorteners, range-based is simpler.
-
-### Our Decision: Range-Based Counter Service
-
-**Reasoning:**
-- Start with database auto-increment for simplicity
-- When we hit scale limits, migrate to range-based allocation
-- Use Zookeeper/etcd for coordination
-- Each API server gets a range and maintains local counter
-
-**Implementation sketch:**
+Check against a blocklist before shortening:
 
 ```python
-class CounterService:
-    def __init__(self):
-        self.current_id = self.get_range_from_coordinator()
-        self.max_id = self.current_id + RANGE_SIZE
-        
-    def get_next_id(self):
-        if self.current_id >= self.max_id:
-            self.current_id = self.get_new_range()
-        id = self.current_id
-        self.current_id += 1
-        return id
+def validate_url(long_url: str):
+    domain = extract_domain(long_url)
+    if blocklist.is_blocked(domain):
+        raise BadRequest("URL contains a blocked domain")
+    # Optional: async check against Google Safe Browsing API
 ```
 
-## Step 6: High-Level Architecture
+The blocklist lives in Redis (fast lookups, easy updates). Additions are propagated within seconds via Redis replication.
 
-Now let&apos;s put it all together. Here&apos;s our high-level design:
+### Hot links (viral URLs)
 
-```
-┌─────────┐
-│ Clients │ (Web, Mobile, API)
-└────┬────┘
-     │
-     ▼
-┌─────────────────┐
-│  Load Balancer  │ (Distribute traffic)
-└────┬────────────┘
-     │
-     ▼
-┌─────────────────┐      ┌──────────────┐
-│  API Servers    │◄────►│   Cache      │
-│  (Stateless)    │      │   (Redis)    │
-│  - Shorten      │      │              │
-│  - Redirect     │      └──────────────┘
-└────┬────────────┘
-     │
-     ▼
-┌─────────────────┐      ┌──────────────┐
-│   Database      │◄────►│   Counter    │
-│   (Sharded)     │      │   Service    │
-└─────────────────┘      └──────────────┘
-```
+A URL that goes viral can hit 100K+ clicks per second. This exhausts even a single Redis cache if all requests hit the same key on the same shard.
 
-### Component Breakdown
-
-**Load Balancer:**
-- Distributes incoming requests across API servers
-- Health checks to remove unhealthy servers
-- SSL termination
-
-**API Servers (Stateless):**
-- Handle shorten and redirect requests
-- Stateless = easy to scale horizontally
-- Can add/remove servers without coordination
-
-**Cache (Redis):**
-- Stores short URL → long URL mappings
-- Reduces database load dramatically
-- Fast lookups (< 1ms)
-
-**Database:**
-- Persistent storage for all URL mappings
-- Sharded for scalability
-- Read replicas for read scaling
-
-**Counter Service:**
-- Generates unique IDs
-- Range-based allocation
-- Highly available
-
-## Step 7: URL Shortening Flow
-
-Let&apos;s trace through what happens when someone shortens a URL:
-
-```
-1. Client sends POST /api/v1/shorten with long URL
-2. Load balancer routes to available API server
-3. API server validates long URL (format, length, blacklist)
-4. If custom alias provided:
-   a. Check if alias exists in database
-   b. If exists and belongs to different user → reject
-   c. If exists and belongs to same user → allow update
-5. If no custom alias:
-   a. Get next ID from counter service
-   b. Encode ID to Base62 (7 characters)
-6. Store mapping in database:
-   - short_url → long_url
-   - expiration_date
-   - user_id
-   - created_at
-7. Cache the mapping in Redis (for fast redirects)
-8. Return short URL to client
-```
-
-**Why cache immediately?** The next request for this URL will likely come soon (user testing, sharing). Caching immediately improves redirect performance.
-
-**Error handling:**
-- If counter service unavailable → return 503 (Service Unavailable)
-- If database write fails → retry with exponential backoff
-- If custom alias collision → return 409 (Conflict)
-
-## Step 8: URL Redirection Flow
-
-This is the hot path—most requests are redirects. It must be fast:
-
-```
-1. Client requests GET /abc123
-2. Load balancer routes to API server
-3. API server checks Redis cache:
-   a. Cache hit → return 301 redirect immediately (< 1ms)
-   b. Cache miss → continue to step 4
-4. Query database for short URL:
-   a. Determine shard from short URL hash
-   b. Query that shard
-5. If found in database:
-   a. Check expiration (if expired, return 410 Gone)
-   b. Cache in Redis (with TTL matching expiration)
-   c. Increment click count (async, don&apos;t block redirect)
-   d. Return 301 redirect
-6. If not found → return 404
-```
-
-**Why check expiration on redirect?** Users might access expired URLs. We check here to avoid redirecting to invalid URLs.
-
-**Why async click count?** Click counting is nice-to-have analytics. Don&apos;t slow down redirects for it. Use async job queue.
-
-**Performance targets:**
-- Cache hit: < 1ms (Redis lookup)
-- Cache miss: < 10ms (database query + cache write)
-- Total redirect: < 100ms (including network)
-
-## Step 9: Database Sharding
-
-With 100M URLs, we can&apos;t store everything in one database. We need to shard.
-
-### Sharding Strategy: Hash-Based
-
-Hash the short URL to determine which shard:
+**Solution:** For URLs with detected high QPS, replicate the cache entry to a local in-process LRU cache on each API server:
 
 ```python
-def get_shard(short_url):
-    hash_value = hash(short_url)
-    shard_id = hash_value % NUM_SHARDS
-    return f"shard_{shard_id}"
+# L1: per-process LRU (1ms, free)
+# L2: Redis (1ms, network)
+# L3: Cassandra (5ms, disk)
+
+local_cache = LRUCache(max_size=1000, ttl_seconds=5)
+
+def get_url(code):
+    url = local_cache.get(code)  # L1 hit
+    if url: return url
+    url = redis.get(f"url:{code}")  # L2 hit
+    if url:
+        local_cache.set(code, url)
+        return url
+    # L3: Cassandra
+    ...
 ```
 
-**Example:**
-- `abc123` → hash = 12345 → shard = 12345 % 10 = 5 → `shard_5`
-- `xyz789` → hash = 98765 → shard = 98765 % 10 = 5 → `shard_5`
+A 5-second TTL on the local cache is acceptable — URLs don't change. This drops Redis traffic by 10–100× for viral links.
 
-**Pros:**
-- **Even distribution**: Hash function distributes URLs evenly
-- **No hotspots**: Popular URLs spread across shards
-- **Simple**: Easy to implement
+---
 
-**Cons:**
-- **Resharding is hard**: Adding shards requires rehashing everything
-- **Can&apos;t query across shards**: Need short URL to find shard
+## Scaling
 
-**Why this works for URL shorteners:** We always have the short URL, so we can always determine the shard. No cross-shard queries needed.
+| Component | Current headroom | When to scale | How |
+|-----------|-----------------|---------------|-----|
+| API Servers | Stateless, add nodes freely | CPU > 70% | Horizontal: add more behind LB |
+| Redis Cache | ~11 GB working set | Memory > 80% | Redis Cluster (shard by key hash) |
+| Cassandra | Handles TB+ | Node disk > 70% | Add more Cassandra nodes (auto-rebalance) |
+| Range Allocator | etcd handles 10K ops/sec | Never (0.64 writes/sec) | Not a concern |
 
-### Sharding Strategy: Range-Based
+---
 
-Shard by first character of short URL:
+## Trade-offs
 
-```
-Shard 1: a-g
-Shard 2: h-n
-Shard 3: o-u
-Shard 4: v-z
-Shard 5: A-G
-Shard 6: H-N
-Shard 7: O-U
-Shard 8: V-Z
-Shard 9: 0-3
-Shard 10: 4-9
-```
+| Decision | What we chose | Why | What we gave up |
+|----------|-------------|-----|----------------|
+| ID generation | Counter + Base62 | Zero collisions, no DB lookup needed | Sequential IDs are guessable (minor) |
+| Redirect code | 302 | Every click is tracked | Marginally more server load vs 301 (cached) |
+| Database | Cassandra | Horizontal scale, perfect key-value fit | No SQL joins, more ops complexity |
+| Caching | Cache-aside | Only caches accessed URLs, saves memory | Cold-start latency on first access |
+| Click tracking | Async via Kafka | Redirect stays < 2ms | Analytics lag by a few seconds |
+| Expired URL response | 410 Gone | Semantically correct | Slightly more complex than always-404 |
 
-**Pros:**
-- **Easy to understand**: Clear mapping
-- **Easy to add shards**: Split a range
+---
 
-**Cons:**
-- **Uneven distribution**: Some characters more common than others
-- **Hotspots possible**: If many URLs start with &apos;a&apos;, Shard 1 gets overloaded
+## Interview Summary
 
-**Why we don&apos;t use this:** Hash-based is simpler and distributes better.
+1. **Base62 counter** — convert a monotonically increasing integer to Base62. Zero collisions, zero DB lookups. Counter distributed via etcd range allocation.
 
-### Number of Shards
+2. **Always 302** — 301 gets cached by browsers permanently, killing click analytics. 302 ensures every redirect hits your server.
 
-**Calculation:**
-- 100M URLs
-- Each shard can handle ~10M URLs comfortably
-- **Need: 10 shards minimum**
+3. **Redis cache-aside** — top 20% of URLs cached in ~11 GB of Redis. Cache TTL respects URL expiration. Viral URLs get an additional in-process L1 cache.
 
-**But consider:**
-- Growth: Plan for 10x growth = 1B URLs
-- **Start with 10 shards, can add more later**
+4. **Cassandra** — pure key-value access pattern fits Cassandra perfectly. Scales horizontally without manual sharding. Use PostgreSQL for smaller scale.
 
-**Resharding strategy:**
-- Use consistent hashing (ring-based)
-- When adding shard, only move ~10% of data
-- Use dual-write during migration (write to old and new shard)
+5. **Async click tracking** — redirect returns in < 2ms, Kafka worker records analytics separately.
 
-## Step 10: Caching Strategy
-
-Caching is critical for performance. Let&apos;s think through our strategy.
-
-### Cache-Aside Pattern
-
-This is what we&apos;ll use:
-
-```
-1. Check cache for short URL
-2. If cache hit → return long URL
-3. If cache miss → query database
-4. Store result in cache
-5. Return long URL
-```
-
-**Why cache-aside?**
-- Simple to understand
-- Cache failures don&apos;t break system (fallback to database)
-- Easy to invalidate (just delete from cache)
-
-**Alternative: Write-Through**
-- Write to cache and database simultaneously
-- More complex, but ensures cache is always fresh
-
-**Why we don&apos;t use write-through:** URL mappings rarely change. Cache-aside is simpler and sufficient.
-
-### Cache Size Calculation
-
-**Assumptions:**
-- 20% of URLs get 80% of traffic (Pareto principle)
-- Cache the top 20% = 20M URLs
-- Each entry: short URL (7 bytes) + long URL (500 bytes) + metadata (50 bytes) ≈ 557 bytes
-
-**Cache size needed:**
-- 20M × 557 bytes = ~11 GB
-
-**Redis memory:**
-- Redis overhead: ~100 bytes per key
-- Total: 20M × (557 + 100) = ~13 GB
-
-**Why 20%?** This covers most traffic. Cache hit rate will be ~80%, which is excellent.
-
-### Cache Eviction Policy
-
-**LRU (Least Recently Used):**
-- When cache is full, evict least recently used entries
-- Keeps popular URLs in cache
-- Simple and effective
-
-**TTL (Time To Live):**
-- Set TTL matching URL expiration
-- Expired URLs automatically removed
-- Reduces memory usage
-
-**Our strategy:** Use both—LRU for eviction, TTL for expiration.
-
-### Cache Invalidation
-
-**When to invalidate:**
-- URL deleted
-- URL expiration changed
-- URL updated (rare)
-
-**How to invalidate:**
-- Delete key from Redis
-- Or set TTL to 0
-
-**Challenge:** In distributed system, need to invalidate across all cache servers.
-
-**Solution:** Use Redis pub/sub to broadcast invalidation messages.
-
-## Step 11: Handling Edge Cases
-
-Let&apos;s think about edge cases and how to handle them.
-
-### Custom Alias Collisions
-
-**Problem:** User wants `short.ly/mybrand`, but it&apos;s taken.
-
-**Solution:**
-- Check database for existing alias
-- If exists and belongs to different user → reject with 409 Conflict
-- If exists and belongs to same user → allow update (user owns it)
-- If doesn&apos;t exist → create it
-
-**Why allow same-user updates?** Users might want to change where their custom alias points.
-
-### URL Expiration
-
-**Problem:** URLs should expire, but users might access them after expiration.
-
-**Solution:**
-- Store expiration date in database
-- On redirect, check expiration before redirecting
-- If expired → return 410 Gone (not 404, because URL existed)
-- Background job periodically deletes expired URLs
-
-**Why 410 Gone?** 404 means &quot;never existed&quot;, 410 means &quot;existed but removed&quot;. More accurate.
-
-### Malicious URLs
-
-**Problem:** Users might shorten malicious/phishing URLs.
-
-**Solution:**
-- Maintain blacklist of malicious domains
-- Check against blacklist before shortening
-- Reject with 400 Bad Request if blacklisted
-- Optionally: Check against external threat intelligence APIs
-
-**Why important?** URL shorteners are often used for phishing. We have a responsibility to prevent abuse.
-
-### Rate Limiting
-
-**Problem:** Users might abuse the service (spam, DoS).
-
-**Solution:**
-- Limit requests per IP: 100 requests/minute
-- Limit requests per user: 1000 requests/hour (if authenticated)
-- Use token bucket algorithm
-- Return 429 Too Many Requests when limit exceeded
-
-**Why rate limit?** Prevents abuse and ensures fair usage.
-
-### Hot URLs
-
-**Problem:** Some URLs go viral and get millions of clicks.
-
-**Solution:**
-- Cache popular URLs longer (extend TTL)
-- Use CDN for top 1% of URLs
-- Separate &quot;hot cache&quot; tier for very popular URLs
-- Monitor and auto-promote hot URLs to CDN
-
-**Why special handling?** Hot URLs can overwhelm a single cache server. Distribute across CDN.
-
-## Step 12: Scaling for Growth
-
-As we grow, we&apos;ll hit new bottlenecks. Let&apos;s plan ahead.
-
-### Read Scaling
-
-**Current:** 350K RPS reads
-
-**Bottlenecks:**
-- Single cache server
-- Database read capacity
-
-**Solutions:**
-- **Redis Cluster**: Distribute cache across multiple nodes
-- **Read Replicas**: Multiple database replicas for reads
-- **CDN**: Cache redirects at edge (geographic distribution)
-- **Connection Pooling**: Reuse database connections
-
-**When to implement:**
-- Redis Cluster: When single Redis hits memory limit
-- Read Replicas: When database CPU hits 70%
-- CDN: When geographic latency becomes issue
-
-### Write Scaling
-
-**Current:** ~2 RPS writes
-
-**Bottlenecks:**
-- Counter service
-- Database write capacity
-
-**Solutions:**
-- **Counter Service Sharding**: Multiple counter services with ranges
-- **Database Sharding**: Already planned
-- **Write-Ahead Log**: Batch writes for better throughput
-- **Async Writes**: Write to queue, process async (for non-critical data)
-
-**When to implement:**
-- Counter sharding: When counter service becomes bottleneck
-- Async writes: For analytics, click counting (non-critical)
-
-### Storage Scaling
-
-**Current:** 55 GB
-
-**Future:** 1B URLs = 550 GB, 10B URLs = 5.5 TB
-
-**Solutions:**
-- **Database Sharding**: Already planned
-- **Archival**: Move old URLs to cold storage (S3, Glacier)
-- **Compression**: Compress long URLs in storage
-- **Deduplication**: If same URL shortened multiple times, store once
-
-**When to implement:**
-- Archival: When database size becomes concern
-- Compression: When storage costs become issue
-
-## Step 13: Monitoring and Analytics
-
-We need visibility into our system.
-
-### Key Metrics
-
-**Performance:**
-- Redirect latency (p50, p95, p99)
-- Cache hit rate (target: >80%)
-- Database query latency
-- Error rate (4xx, 5xx)
-
-**Business:**
-- URLs created per day
-- Clicks per day
-- Popular URLs (top 100)
-- User growth
-
-**Infrastructure:**
-- CPU, memory, disk usage
-- Network bandwidth
-- Cache memory usage
-- Database connection pool usage
-
-### Click Analytics
-
-Users want to know:
-- How many clicks did my URL get?
-- Where did clicks come from? (geographic)
-- What devices/browsers?
-- What referrers?
-
-**Implementation:**
-- Store click events in separate analytics database
-- Use async job queue (don&apos;t block redirects)
-- Aggregate data for dashboards
-- Consider using time-series database (InfluxDB, TimescaleDB)
-
-**Why separate database?** Analytics queries are different from URL lookups. Separate database optimized for analytics.
-
-## Step 14: Security Considerations
-
-Security is critical for a public-facing service.
-
-### Authentication & Authorization
-
-**For custom aliases:**
-- Require user accounts
-- Authenticate via API keys or OAuth
-- Users can only update/delete their own URLs
-
-**For public URLs:**
-- No authentication needed (ease of use)
-- But rate limit by IP to prevent abuse
-
-### Input Validation
-
-**Validate long URLs:**
-- Check URL format (must start with http:// or https://)
-- Check URL length (max 2048 characters)
-- Check against blacklist
-- Sanitize to prevent injection attacks
-
-**Validate custom aliases:**
-- Alphanumeric + hyphens only
-- Length limits (min 4, max 20 characters)
-- Reserved words (admin, api, etc.)
-
-### Privacy
-
-**Consider:**
-- Allow users to make URLs private (password-protected)
-- Don&apos;t log sensitive data
-- GDPR compliance (allow URL deletion)
-- Rate limit to prevent enumeration attacks
-
-## Step 15: Trade-offs and Alternatives
-
-Let&apos;s reflect on the decisions we made and alternatives.
-
-### Counter Service vs Hash-Based
-
-**We chose:** Counter-based
-
-**Trade-off:**
-- Counter: Guaranteed uniqueness, but needs coordination
-- Hash: No coordination, but collisions possible
-
-**Why counter:** Uniqueness is critical. Collisions would break the system.
-
-### SQL vs NoSQL
-
-**We chose:** Start with SQL, migrate to NoSQL if needed
-
-**Trade-off:**
-- SQL: Strong consistency, complex queries, harder to scale
-- NoSQL: Eventual consistency, simple queries, easier to scale
-
-**Why SQL initially:** Simpler to start, strong guarantees. Can migrate later.
-
-### Cache Size
-
-**We chose:** Cache top 20% (20M URLs)
-
-**Trade-off:**
-- More cache = faster reads, but higher cost
-- Less cache = lower cost, but slower reads
-
-**Why 20%:** 80% cache hit rate is excellent. Diminishing returns beyond that.
-
-### Sharding Strategy
-
-**We chose:** Hash-based sharding
-
-**Trade-off:**
-- Hash-based: Even distribution, but hard to reshard
-- Range-based: Easy to reshard, but uneven distribution
-
-**Why hash-based:** Even distribution is more important than easy resharding.
-
-## Summary
-
-Designing a URL shortener requires careful consideration of:
-
-1. **Unique ID Generation**: Counter service with Base62 encoding ensures uniqueness
-2. **Scalable Storage**: Sharded database handles growth
-3. **Fast Reads**: Multi-layer caching (Redis + CDN) for performance
-4. **High Availability**: Load balancing, replication, redundancy
-5. **Monitoring**: Analytics and observability for operations
-
-**Key insights:**
-- Read-heavy workload → optimize for reads (caching, CDN)
-- Simple data model → NoSQL might be overkill initially
-- Uniqueness critical → Counter-based generation
-- Scale gradually → Start simple, add complexity as needed
-
-**Next steps:**
-- Implement MVP with SQL + Redis
-- Monitor performance and scale
-- Migrate to NoSQL if database becomes bottleneck
-- Add CDN when geographic distribution matters
-
-The key is balancing simplicity with scalability. Start with a simple design, measure everything, and optimize based on actual requirements and constraints.
+6. **410 vs 404** — expired URLs return 410 (existed and was removed), not 404 (never existed). Semantically correct and tells crawlers not to retry.

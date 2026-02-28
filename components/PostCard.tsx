@@ -16,17 +16,19 @@ export default function PostCard({ post, featured = false, module }: PostCardPro
 
   return (
     <Link href={`/blog/${post.slug}`} className="h-full">
-      <article
+      <div
         className={`
-          group relative rounded-2xl border border-border bg-background p-6 md:p-8
-          hover:border-accent/50 hover:shadow-2xl hover:shadow-foreground/5 transition-all duration-300
+          group relative rounded-2xl border border-border bg-surface p-6 md:p-8
+          hover:border-accent/50 transition-all duration-300
           hover:-translate-y-1 overflow-hidden h-full flex flex-col
+          hover:shadow-[0_0_0_1px_rgba(245,158,11,0.2),_0_8px_32px_rgba(245,158,11,0.08)]
+          dark:hover:shadow-[0_0_0_1px_rgba(245,158,11,0.25),_0_8px_32px_rgba(245,158,11,0.10),_0_2px_8px_rgba(0,0,0,0.4)]
           ${featured ? 'lg:col-span-2' : ''}
         `}
       >
         {/* Subtle gradient overlay on hover */}
-        <div className="absolute inset-0 bg-gradient-to-br from-foreground/0 via-foreground/0 to-foreground/0 group-hover:from-foreground/3 group-hover:via-foreground/2 group-hover:to-foreground/3 transition-all duration-300 rounded-2xl pointer-events-none" />
-        
+        <div className="absolute inset-0 bg-gradient-to-br from-accent/0 via-accent/0 to-accent/0 group-hover:from-accent/[0.06] group-hover:to-accent/[0.12] transition-all duration-300 rounded-2xl pointer-events-none" />
+
         <div className="relative flex flex-col h-full">
           <div className="flex flex-wrap gap-2 mb-4">
             {module && (
@@ -41,17 +43,14 @@ export default function PostCard({ post, featured = false, module }: PostCardPro
             {post.tags && post.tags.length > 0 && (
               <>
                 {post.tags.slice(0, module ? 2 : 3).map((tag) => (
-                  <span
-                    key={tag}
-                    className="text-xs px-3 py-1.5 rounded-full bg-code-bg text-foreground/70 font-medium border border-border backdrop-blur-sm"
-                  >
+                  <span key={tag} className="tag-pill">
                     {tag}
                   </span>
                 ))}
               </>
             )}
           </div>
-          
+
           <h2
             className={`
               font-bold mb-3 group-hover:text-accent transition-colors tracking-tight
@@ -60,14 +59,14 @@ export default function PostCard({ post, featured = false, module }: PostCardPro
           >
             {post.title}
           </h2>
-          
+
           {post.description && (
             <p className="text-foreground/70 mb-6 line-clamp-2 leading-relaxed flex-grow">
               {post.description}
             </p>
           )}
-          
-          <div className="flex items-center justify-between mt-auto pt-4 border-t border-border/50 group-hover:border-accent/30 transition-colors">
+
+          <div className="flex items-center justify-between mt-auto pt-4 border-t border-border/30 group-hover:border-accent/30 transition-colors">
             <div className="flex items-center gap-4 text-sm text-foreground/60">
               <time dateTime={post.date} className="font-medium">
                 {format(new Date(post.date), 'MMM d, yyyy')}
@@ -85,7 +84,7 @@ export default function PostCard({ post, featured = false, module }: PostCardPro
             </div>
           </div>
         </div>
-      </article>
+      </div>
     </Link>
   )
 }
