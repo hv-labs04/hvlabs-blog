@@ -57,11 +57,11 @@ export default function ModulePage({ params }: ModulePageProps) {
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 max-w-4xl">
       <Link
-        href="/modules"
+        href={moduleData.group ? `/groups/${moduleData.group}` : '/'}
         className="inline-flex items-center gap-2 text-sm text-foreground/70 hover:text-accent mb-8 transition-colors group"
       >
         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-        Back to modules
+        Back
       </Link>
 
       <header className="mb-12 animate-fade-in">

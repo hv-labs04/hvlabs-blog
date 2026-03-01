@@ -25,11 +25,11 @@ export default function Header() {
             >
               Blog
             </Link>
-            <Link 
-              href="/modules" 
+            <Link
+              href="/"
               className="text-sm font-medium text-foreground/70 hover:text-accent transition-colors"
             >
-              Modules
+              Groups
             </Link>
             <Link 
               href="/about" 

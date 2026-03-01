@@ -1,6 +1,8 @@
+import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { getAllModules, getPostsByModule } from '@/lib/modules'
-import { BookOpen, ArrowRight, Cpu, Database, Zap, Network, BookMarked, Code2, Layers } from 'lucide-react'
+import { getGroupBySlug, getAllGroups, getModulesByGroup } from '@/lib/groups'
+import { getPostsByModule } from '@/lib/modules'
+import { ArrowRight, BookOpen, Code2, Database, Zap, Network, BookMarked, Layers } from 'lucide-react'
 import type { Module } from '@/lib/modules'
 
 function getModuleIcon(module: Module) {
@@ -26,20 +28,38 @@ function DifficultyBadge({ difficulty }: { difficulty?: string }) {
   return <span className={cls}>{difficulty}</span>
 }
 
-export default function ModulesPage() {
-  const modules = getAllModules()
+export async function generateStaticParams() {
+  const groups = getAllGroups()
+  return groups.map((g) => ({ slug: g.slug }))
+}
+
+export default function GroupPage({ params }: { params: { slug: string } }) {
+  const group = getGroupBySlug(params.slug)
+  if (!group) notFound()
+
+  const modules = getModulesByGroup(params.slug)
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 max-w-5xl">
       <div className="mb-12 animate-fade-in">
-        <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">Learning Modules</h1>
-        <p className="text-lg text-foreground/70">
-          Structured learning paths from fundamentals to production-ready system design
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-sm text-foreground/60 hover:text-accent transition-colors mb-6"
+        >
+          <ArrowRight className="w-3.5 h-3.5 rotate-180" />
+          All groups
+        </Link>
+        <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">{group.title}</h1>
+        {group.description && (
+          <p className="text-lg text-foreground/70 max-w-2xl">{group.description}</p>
+        )}
+        <p className="mt-3 text-sm text-foreground/50">
+          {modules.length} {modules.length === 1 ? 'module' : 'modules'}
         </p>
       </div>
 
       {modules.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {modules.map((module, index) => {
             const posts = getPostsByModule(module.slug)
             const totalReadingTime = posts.reduce((sum, post) => sum + (post.readingTime || 0), 0)
@@ -59,11 +79,9 @@ export default function ModulesPage() {
                       <span className="text-accent">{getModuleIcon(module)}</span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <h2 className="text-xl md:text-2xl font-bold group-hover:text-accent transition-colors tracking-tight">
-                          {module.title}
-                        </h2>
-                      </div>
+                      <h2 className="text-xl md:text-2xl font-bold mb-1 group-hover:text-accent transition-colors tracking-tight">
+                        {module.title}
+                      </h2>
                       <DifficultyBadge difficulty={module.difficulty} />
                     </div>
                   </div>
@@ -96,9 +114,7 @@ export default function ModulesPage() {
         </div>
       ) : (
         <div className="text-center py-20 animate-fade-in">
-          <p className="text-lg text-foreground/70">
-            No modules yet. Create module files in <code className="bg-code-bg px-2 py-1 rounded">content/modules/</code>
-          </p>
+          <p className="text-lg text-foreground/70">No modules in this group yet.</p>
         </div>
       )}
     </div>

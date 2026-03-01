@@ -14,6 +14,7 @@ export interface Module {
   postOrder?: string[] // Order of posts within module
   difficulty?: 'Beginner' | 'Intermediate' | 'Advanced'
   icon?: string
+  group?: string
 }
 
 export function getAllModules(): Module[] {
@@ -44,6 +45,7 @@ export function getAllModules(): Module[] {
         postOrder: data.postOrder || [],
         difficulty: data.difficulty,
         icon: data.icon,
+        group: data.group,
       } as Module
     })
     .filter((module): module is Module => module !== null)
@@ -70,6 +72,7 @@ export function getModuleBySlug(slug: string): Module | null {
     postOrder: data.postOrder || [],
     difficulty: data.difficulty,
     icon: data.icon,
+    group: data.group,
   }
 }
 

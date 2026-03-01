@@ -1,36 +1,28 @@
 import Link from 'next/link'
 import { getAllPosts } from '@/lib/posts'
-import { getAllModules, getPostsByModule } from '@/lib/modules'
-import { ArrowRight, Clock, BookOpen, Code2, BookMarked, Database, Zap, Network, Layers } from 'lucide-react'
-import type { Module } from '@/lib/modules'
+import { getAllGroups, getModulesByGroup } from '@/lib/groups'
+import { getPostsByModule } from '@/lib/modules'
+import { ArrowRight, Clock, Layers, Code2 } from 'lucide-react'
+import type { Group } from '@/lib/groups'
 
-function getModuleIcon(module: Module) {
+function getGroupIcon(group: Group) {
   const iconMap: Record<string, React.ReactNode> = {
-    'building-with-nextjs': <Code2 className="w-6 h-6" />,
-    'system-design-fundamentals': <BookMarked className="w-6 h-6" />,
-    'storage-databases': <Database className="w-6 h-6" />,
-    'caching-messaging': <Zap className="w-6 h-6" />,
-    'distributed-systems': <Network className="w-6 h-6" />,
-    'system-design-case-studies': <Layers className="w-6 h-6" />,
+    'system-design': <Layers className="w-7 h-7" />,
+    'web-dev': <Code2 className="w-7 h-7" />,
   }
-  return iconMap[module.slug] || <BookOpen className="w-6 h-6" />
-}
-
-function DifficultyBadge({ difficulty }: { difficulty?: string }) {
-  if (!difficulty) return null
-  const cls =
-    difficulty === 'Beginner'
-      ? 'difficulty-beginner'
-      : difficulty === 'Advanced'
-      ? 'difficulty-advanced'
-      : 'difficulty-intermediate'
-  return <span className={cls}>{difficulty}</span>
+  return iconMap[group.slug] || <Layers className="w-7 h-7" />
 }
 
 export default function Home() {
   const allPosts = getAllPosts()
   const recentPosts = allPosts.slice(0, 4)
-  const modules = getAllModules()
+  const groups = getAllGroups()
+
+  const groupsWithStats = groups.map((group) => {
+    const modules = getModulesByGroup(group.slug)
+    const totalPosts = modules.reduce((sum, m) => sum + getPostsByModule(m.slug).length, 0)
+    return { group, modules, totalPosts }
+  })
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 max-w-5xl">
@@ -73,61 +65,52 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Modules Section */}
-      {modules.length > 0 && (
+      {/* Groups Section */}
+      {groupsWithStats.length > 0 && (
         <section className="mb-16 animate-fade-in">
-          <div className="flex items-center justify-between mb-10">
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Modules</h2>
-            <Link
-              href="/modules"
-              className="text-accent hover:text-accent-hover font-medium flex items-center gap-2 group"
-            >
-              View all
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
+          <div className="mb-10">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Learning Paths</h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {modules.map((module, index) => {
-                const modulePosts = getPostsByModule(module.slug)
-                return (
-                  <Link
-                    key={module.slug}
-                    href={`/modules/${module.slug}`}
-                    className="group block p-6 rounded-2xl border border-border bg-surface transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_8px_30px_rgba(0,0,0,0.55)] relative overflow-hidden"
-                    style={{ animationDelay: `${index * 100}ms` }}
-                  >
-                    <div className="absolute top-0 inset-x-0 h-0.5 bg-accent origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300 rounded-t-2xl" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {groupsWithStats.map(({ group, modules, totalPosts }, index) => (
+              <Link
+                key={group.slug}
+                href={`/groups/${group.slug}`}
+                className="group block p-8 rounded-2xl border border-border bg-surface transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_8px_30px_rgba(0,0,0,0.55)] relative overflow-hidden"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
+                <div className="absolute top-0 inset-x-0 h-0.5 bg-accent origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300 rounded-t-2xl" />
 
-                    <div className="relative flex flex-col h-full">
-                      <div className="flex items-start gap-4 mb-4">
-                        <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-accent/15 border border-accent/30 flex items-center justify-center text-accent group-hover:bg-accent/25 transition-colors">
-                          {getModuleIcon(module)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-xl md:text-2xl font-bold mb-1 group-hover:text-accent transition-colors tracking-tight">
-                            {module.title}
-                          </h3>
-                          <DifficultyBadge difficulty={module.difficulty} />
-                        </div>
-                      </div>
-                      {module.description && (
-                        <p className="text-foreground/70 mb-4 line-clamp-3 leading-relaxed">
-                          {module.description}
-                        </p>
-                      )}
-                      <div className="mt-auto pt-4 border-t border-border/50 group-hover:border-accent/30 transition-colors flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-sm text-foreground/60">
-                          <span>{modulePosts.length} {modulePosts.length === 1 ? 'post' : 'posts'}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-accent opacity-0 group-hover:opacity-100 transition-opacity">
-                          <span className="text-sm font-medium">Explore</span>
-                          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                        </div>
-                      </div>
+                <div className="relative flex flex-col h-full">
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className="flex-shrink-0 w-14 h-14 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center text-accent group-hover:bg-accent/25 transition-colors">
+                      {getGroupIcon(group)}
                     </div>
-                  </Link>
-                )
-              })}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-2xl font-bold mb-1 group-hover:text-accent transition-colors tracking-tight">
+                        {group.title}
+                      </h3>
+                      <p className="text-sm text-foreground/50">
+                        {modules.length} {modules.length === 1 ? 'module' : 'modules'} · {totalPosts} {totalPosts === 1 ? 'post' : 'posts'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {group.description && (
+                    <p className="text-foreground/70 mb-4 leading-relaxed line-clamp-2">
+                      {group.description}
+                    </p>
+                  )}
+
+                  <div className="mt-auto pt-4 border-t border-border/50 group-hover:border-accent/30 transition-colors flex items-center justify-end">
+                    <div className="flex items-center gap-2 text-accent opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="text-sm font-medium">Explore</span>
+                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            ))}
           </div>
         </section>
       )}
