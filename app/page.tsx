@@ -84,7 +84,7 @@ export default function Home() {
       {groupsWithStats.length > 0 && (
         <section className="mb-16 animate-fade-in">
           <div className="flex items-center gap-3 mb-8">
-            <span className="text-accent font-mono text-sm">//</span>
+            <span className="text-accent font-mono text-sm">{'// '}</span>
             <h2
               className="text-4xl font-normal"
               style={{ fontFamily: 'var(--font-heading)', letterSpacing: '0.04em' }}
