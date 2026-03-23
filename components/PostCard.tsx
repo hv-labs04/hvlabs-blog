@@ -13,19 +13,18 @@ interface PostCardProps {
 }
 
 export default function PostCard({ post, featured = false, module }: PostCardProps) {
-
   return (
     <Link href={`/blog/${post.slug}`} className="h-full">
       <div
         className={`
-          group relative rounded-2xl border border-border bg-surface p-6 md:p-8
-          hover:-translate-y-1 transition-all duration-300 overflow-hidden h-full flex flex-col
-          hover:shadow-[0_8px_30px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_8px_30px_rgba(0,0,0,0.55)]
+          group relative border border-border bg-surface p-6
+          hover:border-accent transition-all duration-200 hover:bg-accent/[0.03]
+          h-full flex flex-col
           ${featured ? 'lg:col-span-2' : ''}
         `}
       >
-        {/* Top accent bar — slides in from left on hover */}
-        <div className="absolute top-0 inset-x-0 h-0.5 bg-accent origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300 rounded-t-2xl" />
+        {/* Left accent bar on hover */}
+        <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-accent origin-top scale-y-0 group-hover:scale-y-100 transition-transform duration-200" />
 
         <div className="relative flex flex-col h-full">
           <div className="flex flex-wrap gap-2 mb-4">
@@ -33,7 +32,7 @@ export default function PostCard({ post, featured = false, module }: PostCardPro
               <Link
                 href={`/modules/${module.slug}`}
                 onClick={(e) => e.stopPropagation()}
-                className="text-xs px-3 py-1.5 rounded-full bg-accent/10 text-accent font-medium border border-accent/20 backdrop-blur-sm hover:bg-accent/20 transition-colors"
+                className="font-mono text-xs px-2 py-0.5 border border-accent/30 text-accent hover:border-accent transition-colors tracking-wide"
               >
                 {module.title}
               </Link>
@@ -41,9 +40,7 @@ export default function PostCard({ post, featured = false, module }: PostCardPro
             {post.tags && post.tags.length > 0 && (
               <>
                 {post.tags.slice(0, module ? 2 : 3).map((tag) => (
-                  <span key={tag} className="tag-pill">
-                    {tag}
-                  </span>
+                  <span key={tag} className="tag-pill">{tag}</span>
                 ))}
               </>
             )}
@@ -51,34 +48,34 @@ export default function PostCard({ post, featured = false, module }: PostCardPro
 
           <h2
             className={`
-              font-bold mb-3 group-hover:text-accent transition-colors tracking-tight
-              ${featured ? 'text-2xl lg:text-3xl' : 'text-xl md:text-2xl'}
+              font-mono font-medium mb-3 group-hover:text-accent transition-colors leading-snug
+              ${featured ? 'text-xl lg:text-2xl' : 'text-base md:text-lg'}
             `}
           >
             {post.title}
           </h2>
 
           {post.description && (
-            <p className="text-foreground/70 mb-6 line-clamp-2 leading-relaxed flex-grow">
+            <p className="font-mono text-xs text-muted mb-6 line-clamp-2 leading-relaxed flex-grow">
               {post.description}
             </p>
           )}
 
-          <div className="flex items-center justify-between mt-auto pt-4 border-t border-border/30 group-hover:border-accent/30 transition-colors">
-            <div className="flex items-center gap-4 text-sm text-foreground/60">
-              <time dateTime={post.date} className="font-medium">
+          <div className="flex items-center justify-between mt-auto pt-4 border-t border-border group-hover:border-accent/30 transition-colors">
+            <div className="flex items-center gap-4 font-mono text-xs text-muted">
+              <time dateTime={post.date}>
                 {format(new Date(post.date), 'MMM d, yyyy')}
               </time>
               {post.readingTime && (
                 <div className="flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5" />
-                  <span>{post.readingTime} min</span>
+                  <Clock className="w-3 h-3" />
+                  <span>{post.readingTime}m</span>
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-2 text-accent opacity-0 group-hover:opacity-100 transition-opacity">
-              <span className="text-sm font-medium">Read</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            <div className="flex items-center gap-1.5 text-accent opacity-0 group-hover:opacity-100 transition-opacity font-mono text-xs">
+              <span>read</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
             </div>
           </div>
         </div>

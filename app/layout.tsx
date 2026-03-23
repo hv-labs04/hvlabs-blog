@@ -1,28 +1,21 @@
 import type { Metadata } from 'next'
-import { Space_Grotesk, Oswald, JetBrains_Mono } from 'next/font/google'
+import { JetBrains_Mono, VT323 } from 'next/font/google'
 import './globals.css'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { ThemeProvider } from '@/components/ThemeProvider'
 
-const spaceGrotesk = Space_Grotesk({
+const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
   variable: '--font-sans',
   display: 'swap',
-  weight: ['300', '400', '500', '600', '700'],
 })
 
-const oswald = Oswald({
+const vt323 = VT323({
   subsets: ['latin'],
   variable: '--font-heading',
   display: 'swap',
-  weight: ['400', '500', '600', '700'],
-})
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ['latin'],
-  variable: '--font-mono',
-  display: 'swap',
+  weight: ['400'],
 })
 
 export const metadata: Metadata = {
@@ -37,8 +30,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${spaceGrotesk.variable} ${oswald.variable} ${jetbrainsMono.variable} antialiased`}>
+    <html lang="en" className="dark" suppressHydrationWarning>
+      <body className={`${jetbrainsMono.variable} ${vt323.variable} antialiased`}>
         <ThemeProvider>
           <div className="flex flex-col min-h-screen">
             <Header />

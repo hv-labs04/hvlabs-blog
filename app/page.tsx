@@ -2,15 +2,15 @@ import Link from 'next/link'
 import { getAllPosts } from '@/lib/posts'
 import { getAllGroups, getModulesByGroup } from '@/lib/groups'
 import { getPostsByModule } from '@/lib/modules'
-import { ArrowRight, Clock, Layers, Code2 } from 'lucide-react'
+import { ArrowRight, Clock } from 'lucide-react'
 import type { Group } from '@/lib/groups'
 
-function getGroupIcon(group: Group) {
-  const iconMap: Record<string, React.ReactNode> = {
-    'system-design': <Layers className="w-7 h-7" />,
-    'web-dev': <Code2 className="w-7 h-7" />,
+function getGroupTag(group: Group) {
+  const tagMap: Record<string, string> = {
+    'system-design': 'SYS',
+    'web-dev': 'WEB',
   }
-  return iconMap[group.slug] || <Layers className="w-7 h-7" />
+  return tagMap[group.slug] || 'MOD'
 }
 
 export default function Home() {
@@ -26,150 +26,188 @@ export default function Home() {
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 max-w-5xl">
-      {/* Hero Section */}
-      <section className="mb-20 animate-fade-in rounded-3xl p-8 md:p-12 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
-        <h1 className="text-6xl md:text-7xl font-bold mb-6 tracking-tight text-foreground">
-          Hi, I&apos;m Vishnu
-        </h1>
 
-        <p className="text-xl md:text-2xl text-foreground/80 mb-6 font-light leading-relaxed max-w-2xl">
-          Software engineer, builder, and curious mind. Welcome to my corner of the internet.
+      {/* Hero Section */}
+      <section className="mb-20 animate-fade-in">
+        {/* Terminal prompt label */}
+        <p className="font-mono text-xs text-muted mb-4 tracking-widest uppercase">
+          <span className="text-accent">$</span> whoami
         </p>
 
-        <p className="text-lg text-foreground/70 mb-8 leading-relaxed max-w-2xl">
-          I write about system design, distributed systems, and the craft of building software at scale.
+        <h1
+          className="text-7xl md:text-9xl font-normal mb-6 glow-green"
+          style={{ fontFamily: 'var(--font-heading)', letterSpacing: '0.06em', lineHeight: 1 }}
+        >
+          HVLABS
+        </h1>
+
+        <p className="font-mono text-base md:text-lg text-foreground/70 mb-3 max-w-2xl leading-relaxed">
+          Software engineer · builder · curious mind.
+        </p>
+        <p className="font-mono text-sm text-muted mb-8 max-w-2xl leading-relaxed">
+          Writing about system design, distributed systems, and the craft of building software at scale.
         </p>
 
         <div className="flex flex-wrap gap-2 mb-10">
-          {['System Design', 'Distributed Systems', 'Backend', 'Next.js'].map((tag) => (
-            <span key={tag} className="tag-pill">
-              {tag}
-            </span>
+          {['system-design', 'distributed-systems', 'backend', 'next.js'].map((tag) => (
+            <span key={tag} className="tag-pill">{tag}</span>
           ))}
         </div>
 
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-wrap gap-4 mb-16">
           <Link
             href="/blog"
-            className="group px-6 py-3 bg-accent text-white rounded-lg hover:bg-accent-hover transition-all duration-200 font-medium shadow-lg shadow-accent/20 hover:shadow-xl hover:shadow-accent/30 hover:-translate-y-0.5 flex items-center gap-2"
+            className="group flex items-center gap-2 px-5 py-2.5 bg-accent text-black font-mono text-sm font-medium hover:bg-accent-hover transition-colors tracking-wide"
           >
-            Read my posts
+            <span>./read-posts</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </Link>
           <Link
             href="/about"
-            className="px-6 py-3 border-2 border-border rounded-lg hover:bg-code-bg hover:border-accent/50 transition-all duration-200 font-medium"
+            className="flex items-center gap-2 px-5 py-2.5 border border-border text-foreground/70 font-mono text-sm hover:border-accent hover:text-accent transition-colors tracking-wide"
           >
-            More about me
+            ./about-me
           </Link>
+        </div>
+
+        {/* Terminal window */}
+        <div className="border border-border bg-surface">
+          {/* Terminal chrome */}
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-code-bg">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-[#ff5f57]" />
+              <div className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
+              <div className="w-3 h-3 rounded-full bg-[#28ca41]" />
+            </div>
+            <span className="font-mono text-xs text-muted tracking-widest">hvlabs.terminal</span>
+            <div className="w-16" />
+          </div>
+
+          {/* Terminal body */}
+          <div className="p-5 font-mono text-sm space-y-1.5">
+            <p><span className="text-accent">~</span> <span className="text-muted">cat welcome.txt</span></p>
+            <p className="text-foreground/80 pl-4">Welcome to hvlabs — a place for deep technical writing.</p>
+            <p><span className="text-accent">~</span> <span className="text-muted">ls posts/ | head -3</span></p>
+            {recentPosts.slice(0, 3).map((post) => (
+              <p key={post.slug} className="pl-4 text-foreground/70">
+                <Link href={`/blog/${post.slug}`} className="hover:text-accent transition-colors">
+                  {post.slug}.md
+                </Link>
+              </p>
+            ))}
+            <p><span className="text-accent">~</span> <span className="text-foreground/40">▋</span></p>
+          </div>
         </div>
       </section>
 
       {/* Groups Section */}
       {groupsWithStats.length > 0 && (
         <section className="mb-16 animate-fade-in">
-          <div className="mb-10">
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Learning Paths</h2>
+          <div className="flex items-center gap-3 mb-8">
+            <span className="text-accent font-mono text-sm">//</span>
+            <h2
+              className="text-4xl font-normal"
+              style={{ fontFamily: 'var(--font-heading)', letterSpacing: '0.04em' }}
+            >
+              LEARNING PATHS
+            </h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {groupsWithStats.map(({ group, modules, totalPosts }, index) => (
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {groupsWithStats.map(({ group, modules, totalPosts }) => (
               <Link
                 key={group.slug}
                 href={`/groups/${group.slug}`}
-                className="group block p-8 rounded-2xl border border-border bg-surface transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_8px_30px_rgba(0,0,0,0.55)] relative overflow-hidden"
-                style={{ animationDelay: `${index * 100}ms` }}
+                className="group block p-6 border border-border bg-surface hover:border-accent transition-all duration-200 hover:bg-accent/[0.03]"
               >
-                <div className="absolute top-0 inset-x-0 h-0.5 bg-accent origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300 rounded-t-2xl" />
-
-                <div className="relative flex flex-col h-full">
-                  <div className="flex items-start gap-4 mb-4">
-                    <div className="flex-shrink-0 w-14 h-14 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center text-accent group-hover:bg-accent/25 transition-colors">
-                      {getGroupIcon(group)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-2xl font-bold mb-1 group-hover:text-accent transition-colors tracking-tight">
-                        {group.title}
-                      </h3>
-                      <p className="text-sm text-foreground/50">
-                        {modules.length} {modules.length === 1 ? 'module' : 'modules'} · {totalPosts} {totalPosts === 1 ? 'post' : 'posts'}
-                      </p>
-                    </div>
-                  </div>
-
-                  {group.description && (
-                    <p className="text-foreground/70 mb-4 leading-relaxed line-clamp-2">
-                      {group.description}
-                    </p>
-                  )}
-
-                  <div className="mt-auto pt-4 border-t border-border/50 group-hover:border-accent/30 transition-colors flex items-center justify-end">
-                    <div className="flex items-center gap-2 text-accent opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span className="text-sm font-medium">Explore</span>
-                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </div>
+                <div className="flex items-start justify-between mb-3">
+                  <span className="font-mono text-xs text-accent border border-accent/30 px-2 py-0.5 tracking-widest">
+                    {getGroupTag(group)}
+                  </span>
+                  <ArrowRight className="w-4 h-4 text-muted group-hover:text-accent group-hover:translate-x-1 transition-all" />
                 </div>
+
+                <h3
+                  className="text-2xl font-normal mb-2 group-hover:text-accent transition-colors"
+                  style={{ fontFamily: 'var(--font-heading)', letterSpacing: '0.03em' }}
+                >
+                  {group.title.toUpperCase()}
+                </h3>
+
+                {group.description && (
+                  <p className="font-mono text-xs text-muted mb-4 leading-relaxed line-clamp-2">
+                    {group.description}
+                  </p>
+                )}
+
+                <p className="font-mono text-xs text-muted/60">
+                  {modules.length} modules · {totalPosts} posts
+                </p>
               </Link>
             ))}
           </div>
         </section>
       )}
 
-      {/* Recent Posts Preview */}
+      {/* Recent Posts */}
       {recentPosts.length > 0 && (
         <section className="mb-16 animate-fade-in">
-          <div className="flex items-center justify-between mb-10">
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Latest Posts</h2>
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <span className="text-accent font-mono text-sm">//</span>
+              <h2
+                className="text-4xl font-normal"
+                style={{ fontFamily: 'var(--font-heading)', letterSpacing: '0.04em' }}
+              >
+                LATEST POSTS
+              </h2>
+            </div>
             <Link
               href="/blog"
-              className="text-accent hover:text-accent-hover font-medium flex items-center gap-2 group"
+              className="font-mono text-xs text-muted hover:text-accent transition-colors flex items-center gap-2 group tracking-wide"
             >
-              View all
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              view all
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {recentPosts.map((post, index) => (
+            {recentPosts.map((post) => (
               <Link
                 key={post.slug}
                 href={`/blog/${post.slug}`}
-                className="group block p-6 rounded-2xl border border-border bg-surface transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_8px_30px_rgba(0,0,0,0.55)] relative overflow-hidden"
-                style={{ animationDelay: `${index * 100}ms` }}
+                className="group block p-6 border border-border bg-surface hover:border-accent transition-all duration-200 hover:bg-accent/[0.03]"
               >
-                <div className="absolute top-0 inset-x-0 h-0.5 bg-accent origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300 rounded-t-2xl" />
-
-                <div className="relative">
-                  {post.tags && post.tags.length > 0 && (
-                    <div className="mb-3">
-                      <span className="tag-pill">{post.tags[0]}</span>
-                    </div>
-                  )}
-                  <h3 className="text-lg md:text-xl font-bold mb-2 group-hover:text-accent transition-colors tracking-tight line-clamp-2">
-                    {post.title}
-                  </h3>
-                  {post.description && (
-                    <p className="text-foreground/70 mb-4 line-clamp-2 leading-relaxed text-sm">
-                      {post.description}
-                    </p>
-                  )}
-                  <div className="flex items-center justify-between text-sm text-foreground/60">
-                    <div className="flex items-center gap-3">
-                      <time dateTime={post.date} className="font-medium">
-                        {new Date(post.date).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })}
-                      </time>
-                      {post.readingTime && (
-                        <div className="flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5" />
-                          <span>{post.readingTime} min</span>
-                        </div>
-                      )}
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-accent opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                {post.tags && post.tags.length > 0 && (
+                  <div className="mb-3">
+                    <span className="tag-pill">{post.tags[0]}</span>
                   </div>
+                )}
+                <h3 className="font-mono text-base font-medium mb-2 group-hover:text-accent transition-colors line-clamp-2 leading-snug">
+                  {post.title}
+                </h3>
+                {post.description && (
+                  <p className="font-mono text-xs text-muted mb-4 line-clamp-2 leading-relaxed">
+                    {post.description}
+                  </p>
+                )}
+                <div className="flex items-center justify-between text-xs font-mono text-muted">
+                  <div className="flex items-center gap-3">
+                    <time dateTime={post.date}>
+                      {new Date(post.date).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
+                    </time>
+                    {post.readingTime && (
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        <span>{post.readingTime}m</span>
+                      </div>
+                    )}
+                  </div>
+                  <ArrowRight className="w-3.5 h-3.5 text-accent opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
                 </div>
               </Link>
             ))}

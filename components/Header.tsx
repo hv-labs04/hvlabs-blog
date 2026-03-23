@@ -1,54 +1,37 @@
-'use client'
-
 import Link from 'next/link'
-import { useTheme } from './ThemeProvider'
-import { Moon, Sun } from 'lucide-react'
 
 export default function Header() {
-  const { theme, toggleTheme } = useTheme()
-
   return (
-    <header className="sticky top-0 z-50 glass border-b border-border/50">
+    <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-sm">
       <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
-          <Link 
-            href="/" 
-            className="text-xl font-bold text-foreground hover:text-accent transition-colors tracking-tight"
+        <div className="flex items-center justify-between h-16">
+          <Link
+            href="/"
+            className="font-heading text-2xl text-accent hover:text-accent-hover transition-colors tracking-widest glow-green"
+            style={{ fontFamily: 'var(--font-heading)' }}
           >
             hvlabs
           </Link>
-          
-          <div className="flex items-center gap-6">
-            <Link 
-              href="/blog" 
-              className="text-sm font-medium text-foreground/70 hover:text-accent transition-colors"
+
+          <div className="flex items-center gap-8">
+            <Link
+              href="/blog"
+              className="text-xs font-mono text-muted hover:text-accent transition-colors tracking-widest uppercase"
             >
               Blog
             </Link>
             <Link
               href="/"
-              className="text-sm font-medium text-foreground/70 hover:text-accent transition-colors"
+              className="text-xs font-mono text-muted hover:text-accent transition-colors tracking-widest uppercase"
             >
               Groups
             </Link>
-            <Link 
-              href="/about" 
-              className="text-sm font-medium text-foreground/70 hover:text-accent transition-colors"
+            <Link
+              href="/about"
+              className="text-xs font-mono text-muted hover:text-accent transition-colors tracking-widest uppercase"
             >
               About
             </Link>
-            
-            <button
-              onClick={toggleTheme}
-              className="p-2.5 rounded-lg hover:bg-code-bg transition-colors border border-transparent hover:border-border"
-              aria-label="Toggle theme"
-            >
-              {theme === 'light' ? (
-                <Moon className="w-5 h-5 text-foreground/70" />
-              ) : (
-                <Sun className="w-5 h-5 text-foreground/70" />
-              )}
-            </button>
           </div>
         </div>
       </nav>
