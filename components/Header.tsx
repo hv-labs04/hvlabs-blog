@@ -15,12 +15,6 @@ export default function Header() {
 
           <div className="flex items-center gap-8">
             <Link
-              href="/blog"
-              className="text-xs font-mono text-muted hover:text-accent transition-colors tracking-widest uppercase"
-            >
-              Blog
-            </Link>
-            <Link
               href="/"
               className="text-xs font-mono text-muted hover:text-accent transition-colors tracking-widest uppercase"
             >
