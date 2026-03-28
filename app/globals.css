@@ -258,11 +258,60 @@ tr:hover td {
 }
 
 /* .prose-content scoped typography */
-.prose-content h1 { font-family: var(--font-heading); @apply text-4xl font-normal mb-4 mt-10; color: var(--accent); letter-spacing: 0.05em; }
-.prose-content h2 { font-family: var(--font-heading); @apply text-3xl font-normal mb-3 mt-8; color: var(--foreground); letter-spacing: 0.03em; }
-.prose-content h3 { font-family: var(--font-heading); @apply text-2xl font-normal mb-2 mt-6; color: var(--foreground); }
-.prose-content h4 { font-family: var(--font-heading); @apply text-xl font-normal mb-2 mt-4; color: var(--foreground); }
-.prose-content p { @apply mb-4; line-height: 1.85; color: color-mix(in srgb, var(--foreground) 85%, transparent); }
+.prose-content h1 {
+  font-family: var(--font-heading);
+  font-size: 3rem;
+  font-weight: 400;
+  margin-bottom: 1rem;
+  margin-top: 2.5rem;
+  color: var(--accent);
+  letter-spacing: 0.05em;
+  line-height: 1.05;
+  text-shadow: 0 0 8px rgba(0, 255, 65, 0.5);
+}
+
+.prose-content h2 {
+  font-family: var(--font-heading);
+  font-size: 2.25rem;
+  font-weight: 400;
+  margin-bottom: 0.75rem;
+  margin-top: 2.5rem;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.prose-content h3 {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  margin-top: 2rem;
+  color: var(--foreground);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.prose-content h4 {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  margin-top: 1.5rem;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.prose-content p {
+  @apply mb-5;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  line-height: 1.9;
+  color: color-mix(in srgb, var(--foreground) 80%, transparent);
+}
 
 .prose-content ul {
   @apply mb-4 ml-0 list-none;

@@ -72,28 +72,28 @@ export default function PostPage({ params }: PostPageProps) {
       <>
       <Link
         href={`/modules/${moduleData.slug}`}
-        className="inline-flex items-center gap-2 text-sm text-foreground/70 hover:text-accent mb-8 transition-colors group"
+        className="inline-flex items-center gap-2 font-mono text-xs text-muted hover:text-accent mb-8 transition-colors tracking-wide"
       >
-        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-        Back to {moduleData.title} Module
+        <ArrowLeft className="w-3.5 h-3.5" />
+        cd ..
       </Link>
-      <div className="mb-6 p-4 rounded-lg bg-surface border-l-4 border-accent">
+      <div className="mb-8 p-4 border border-border bg-surface border-l-2 border-l-accent">
         <div className="flex items-center justify-between">
           <div>
             <Link
               href={`/modules/${moduleData.slug}`}
-              className="text-sm font-semibold text-accent hover:text-accent-hover transition-colors"
+              className="font-mono text-xs text-accent hover:text-accent-hover transition-colors tracking-wide"
             >
               {moduleData.title}
             </Link>
             {progress && (
-              <p className="text-xs text-foreground/60 mt-0.5">
-                Part {progress.current} of {progress.total}
+              <p className="font-mono text-xs text-muted mt-0.5">
+                part {progress.current} of {progress.total}
               </p>
             )}
           </div>
           {progress && (
-            <span className="text-xs px-2.5 py-1 rounded-full bg-accent/10 text-accent font-medium border border-accent/20">
+            <span className="font-mono text-xs text-accent border border-accent/30 px-2 py-0.5">
               {progress.current}/{progress.total}
             </span>
           )}
@@ -103,9 +103,14 @@ export default function PostPage({ params }: PostPageProps) {
       )}
 
       <header className="mb-12 animate-fade-in">
-        <h1 className="text-4xl md:text-5xl font-bold mb-6 tracking-tight">{post.title}</h1>
+        <h1
+          className="mb-6 glow-green"
+          style={{ fontFamily: 'var(--font-heading)', fontSize: 'clamp(2.5rem, 6vw, 4.5rem)', fontWeight: 400, letterSpacing: '0.04em', lineHeight: 1.05, color: 'var(--accent)' }}
+        >
+          {post.title}
+        </h1>
 
-        <div className="flex flex-wrap items-center gap-4 text-sm text-foreground/70 mb-6">
+        <div className="flex flex-wrap items-center gap-3 font-mono text-xs text-muted mb-6">
           <time dateTime={post.date}>
             {format(new Date(post.date), 'MMMM d, yyyy')}
           </time>
@@ -161,14 +166,13 @@ export default function PostPage({ params }: PostPageProps) {
             {previousPost ? (
               <Link
                 href={`/blog/${previousPost.slug}`}
-                className="group relative p-6 rounded-xl border border-border bg-surface transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_8px_30px_rgba(0,0,0,0.55)] overflow-hidden"
+                className="group p-5 border border-border bg-surface hover:border-accent transition-all duration-200 hover:bg-accent/[0.03]"
               >
-                <div className="absolute top-0 inset-x-0 h-0.5 bg-accent origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300 rounded-t-xl" />
-                <div className="flex items-center gap-2 text-xs font-medium text-foreground/50 uppercase tracking-wider mb-2">
-                  <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" />
-                  Previous Post
+                <div className="flex items-center gap-2 font-mono text-xs text-muted uppercase tracking-widest mb-2">
+                  <ArrowLeft className="w-3 h-3 group-hover:-translate-x-1 transition-transform" />
+                  prev
                 </div>
-                <p className="font-semibold group-hover:text-accent transition-colors leading-snug">
+                <p className="font-mono text-sm text-foreground group-hover:text-accent transition-colors leading-snug">
                   {previousPost.title}
                 </p>
               </Link>
@@ -176,14 +180,13 @@ export default function PostPage({ params }: PostPageProps) {
             {nextPost && (
               <Link
                 href={`/blog/${nextPost.slug}`}
-                className="group relative p-6 rounded-xl border border-border bg-surface transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_8px_30px_rgba(0,0,0,0.55)] overflow-hidden md:text-right"
+                className="group p-5 border border-border bg-surface hover:border-accent transition-all duration-200 hover:bg-accent/[0.03] md:text-right"
               >
-                <div className="absolute top-0 inset-x-0 h-0.5 bg-accent origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300 rounded-t-xl" />
-                <div className="flex items-center gap-2 text-xs font-medium text-foreground/50 uppercase tracking-wider mb-2 md:justify-end">
-                  Next Post
-                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                <div className="flex items-center gap-2 font-mono text-xs text-muted uppercase tracking-widest mb-2 md:justify-end">
+                  next
+                  <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                 </div>
-                <p className="font-semibold group-hover:text-accent transition-colors leading-snug">
+                <p className="font-mono text-sm text-foreground group-hover:text-accent transition-colors leading-snug">
                   {nextPost.title}
                 </p>
               </Link>

@@ -2,20 +2,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { getGroupBySlug, getAllGroups, getModulesByGroup } from '@/lib/groups'
 import { getPostsByModule } from '@/lib/modules'
-import { ArrowRight, BookOpen, Code2, Database, Zap, Network, BookMarked, Layers } from 'lucide-react'
-import type { Module } from '@/lib/modules'
-
-function getModuleIcon(module: Module) {
-  const iconMap: Record<string, React.ReactNode> = {
-    'building-with-nextjs': <Code2 className="w-6 h-6" />,
-    'system-design-fundamentals': <BookMarked className="w-6 h-6" />,
-    'storage-databases': <Database className="w-6 h-6" />,
-    'caching-messaging': <Zap className="w-6 h-6" />,
-    'distributed-systems': <Network className="w-6 h-6" />,
-    'system-design-case-studies': <Layers className="w-6 h-6" />,
-  }
-  return iconMap[module.slug] || <BookOpen className="w-6 h-6" />
-}
+import { ArrowLeft, ArrowRight } from 'lucide-react'
 
 function DifficultyBadge({ difficulty }: { difficulty?: string }) {
   if (!difficulty) return null
@@ -25,7 +12,7 @@ function DifficultyBadge({ difficulty }: { difficulty?: string }) {
       : difficulty === 'Advanced'
       ? 'difficulty-advanced'
       : 'difficulty-intermediate'
-  return <span className={cls}>{difficulty}</span>
+  return <span className={cls}>{difficulty.toUpperCase()}</span>
 }
 
 export async function generateStaticParams() {
@@ -41,25 +28,39 @@ export default function GroupPage({ params }: { params: { slug: string } }) {
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 max-w-5xl">
+
+      {/* Back link */}
+      <Link
+        href="/"
+        className="inline-flex items-center gap-2 font-mono text-xs text-muted hover:text-accent transition-colors mb-10 tracking-wide"
+      >
+        <ArrowLeft className="w-3.5 h-3.5" />
+        cd ..
+      </Link>
+
+      {/* Header */}
       <div className="mb-12 animate-fade-in">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-1.5 text-sm text-foreground/60 hover:text-accent transition-colors mb-6"
+        <p className="font-mono text-xs text-muted mb-3 tracking-widest uppercase">
+          <span className="text-accent">$</span> ls {params.slug}/
+        </p>
+        <h1
+          className="text-6xl md:text-7xl font-normal mb-4 glow-green"
+          style={{ fontFamily: 'var(--font-heading)', letterSpacing: '0.05em', lineHeight: 1.05 }}
         >
-          <ArrowRight className="w-3.5 h-3.5 rotate-180" />
-          All groups
-        </Link>
-        <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">{group.title}</h1>
+          {group.title.toUpperCase()}
+        </h1>
         {group.description && (
-          <p className="text-lg text-foreground/70 max-w-2xl">{group.description}</p>
+          <p className="font-mono text-sm text-muted max-w-2xl leading-relaxed mt-4">
+            {group.description}
+          </p>
         )}
-        <p className="mt-3 text-sm text-foreground/50">
+        <p className="font-mono text-xs text-muted/50 mt-3">
           {modules.length} {modules.length === 1 ? 'module' : 'modules'}
         </p>
       </div>
 
       {modules.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-4">
           {modules.map((module, index) => {
             const posts = getPostsByModule(module.slug)
             const totalReadingTime = posts.reduce((sum, post) => sum + (post.readingTime || 0), 0)
@@ -68,43 +69,37 @@ export default function GroupPage({ params }: { params: { slug: string } }) {
               <Link
                 key={module.slug}
                 href={`/modules/${module.slug}`}
-                className="group block h-full p-6 md:p-8 rounded-2xl border border-border bg-surface transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_8px_30px_rgba(0,0,0,0.55)] relative overflow-hidden animate-fade-in"
+                className="group block p-6 border border-border bg-surface hover:border-accent transition-all duration-200 hover:bg-accent/[0.03] animate-fade-in"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
-                <div className="absolute top-0 inset-x-0 h-0.5 bg-accent origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300 rounded-t-2xl" />
-
-                <div className="relative flex flex-col h-full">
-                  <div className="flex items-start gap-4 mb-4">
-                    <div className="flex-shrink-0 p-3 rounded-lg bg-accent/10 border border-accent/20 group-hover:bg-accent/20 transition-colors">
-                      <span className="text-accent">{getModuleIcon(module)}</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h2 className="text-xl md:text-2xl font-bold mb-1 group-hover:text-accent transition-colors tracking-tight">
-                        {module.title}
-                      </h2>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className="font-mono text-xs text-muted/50">
+                        {String(index + 1).padStart(2, '0')}
+                      </span>
                       <DifficultyBadge difficulty={module.difficulty} />
                     </div>
+
+                    <h2
+                      className="text-2xl font-normal mb-2 group-hover:text-accent transition-colors"
+                      style={{ fontFamily: 'var(--font-heading)', letterSpacing: '0.03em' }}
+                    >
+                      {module.title.toUpperCase()}
+                    </h2>
+
+                    {module.description && (
+                      <p className="font-mono text-xs text-muted leading-relaxed line-clamp-2">
+                        {module.description}
+                      </p>
+                    )}
                   </div>
 
-                  {module.description && (
-                    <p className="text-foreground/70 mb-6 line-clamp-3 leading-relaxed flex-grow">
-                      {module.description}
-                    </p>
-                  )}
-
-                  <div className="mt-auto pt-4 border-t border-border/50 group-hover:border-accent/30 transition-colors flex items-center justify-between">
-                    <div className="flex items-center gap-3 text-sm text-foreground/60">
-                      <span>{posts.length} {posts.length === 1 ? 'post' : 'posts'}</span>
-                      {totalReadingTime > 0 && (
-                        <>
-                          <span>·</span>
-                          <span>~{totalReadingTime} min</span>
-                        </>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 text-accent opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span className="text-sm font-medium">Explore</span>
-                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  <div className="flex flex-col items-end gap-3 flex-shrink-0">
+                    <ArrowRight className="w-4 h-4 text-muted group-hover:text-accent group-hover:translate-x-1 transition-all" />
+                    <div className="font-mono text-xs text-muted/60 text-right">
+                      <p>{posts.length} posts</p>
+                      {totalReadingTime > 0 && <p>~{totalReadingTime} min</p>}
                     </div>
                   </div>
                 </div>
@@ -113,9 +108,7 @@ export default function GroupPage({ params }: { params: { slug: string } }) {
           })}
         </div>
       ) : (
-        <div className="text-center py-20 animate-fade-in">
-          <p className="text-lg text-foreground/70">No modules in this group yet.</p>
-        </div>
+        <p className="font-mono text-sm text-muted">No modules yet.</p>
       )}
     </div>
   )
