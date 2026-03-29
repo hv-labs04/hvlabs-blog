@@ -10,6 +10,8 @@ import MermaidDiagram from '@/components/MermaidDiagram'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 import type { Metadata } from 'next'
 
+import { tagStyle } from '@/lib/tagColors'
+
 interface PostPageProps {
   params: {
     slug: string
@@ -125,7 +127,7 @@ export default function PostPage({ params }: PostPageProps) {
         {post.tags && post.tags.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {post.tags.map((tag) => (
-              <span key={tag} className="tag-pill">
+              <span key={tag} className="tag-pill" style={tagStyle(tag)}>
                 {tag}
               </span>
             ))}

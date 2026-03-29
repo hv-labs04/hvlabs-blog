@@ -5,6 +5,8 @@ import { format } from 'date-fns'
 import { ArrowLeft, ArrowRight, Clock } from 'lucide-react'
 import type { Metadata } from 'next'
 
+import { tagStyle } from '@/lib/tagColors'
+
 interface ModulePageProps {
   params: {
     slug: string
@@ -96,7 +98,7 @@ export default function ModulePage({ params }: ModulePageProps) {
                     {String(index + 1).padStart(2, '0')}
                   </span>
                   {post.tags && post.tags.length > 0 && (
-                    <span className="tag-pill">{post.tags[0]}</span>
+                    <span className="tag-pill" style={tagStyle(post.tags[0])}>{post.tags[0]}</span>
                   )}
                 </div>
 

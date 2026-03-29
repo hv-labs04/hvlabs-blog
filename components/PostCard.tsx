@@ -6,35 +6,7 @@ import { ArrowRight, Clock } from 'lucide-react'
 import type { Post } from '@/lib/posts'
 import type { Module } from '@/lib/modules'
 
-const TAG_COLORS: Record<string, string> = {
-  'system-design':        '#a855f7',
-  'databases':            '#00bfff',
-  'storage':              '#00bfff',
-  'caching':              '#f59e0b',
-  'messaging':            '#f59e0b',
-  'distributed-systems':  '#ff6b35',
-  'distributed':          '#ff6b35',
-  'architecture':         '#06b6d4',
-  'networking':           '#ec4899',
-  'scalability':          '#00ff41',
-  'performance':          '#00ff41',
-  'case-study':           '#f472b6',
-  'backend':              '#818cf8',
-  'api':                  '#818cf8',
-  'nextjs':               '#e2e8f0',
-  'react':                '#38bdf8',
-  'typescript':           '#60a5fa',
-  'fundamentals':         '#34d399',
-}
-
-function tagStyle(tag: string) {
-  const color = TAG_COLORS[tag.toLowerCase()] ?? '#666666'
-  return {
-    borderColor: color,
-    color,
-    background: `color-mix(in srgb, ${color} 10%, transparent)`,
-  }
-}
+import { tagStyle } from '@/lib/tagColors'
 
 interface PostCardProps {
   post: Post
