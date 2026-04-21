@@ -8,6 +8,7 @@ function getGroupTag(group: Group) {
   const tagMap: Record<string, string> = {
     'system-design': 'SYS',
     'web-dev': 'WEB',
+    'dsa': 'DSA',
   }
   return tagMap[group.slug] || 'MOD'
 }
